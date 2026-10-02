@@ -1,0 +1,21 @@
+{
+  "id": "./index.html",
+  "name": "BAN MOTUI",
+  "short_name": "BAN MOTUI",
+  "description": "Aplikasi Pencatatan Pasang/Lepas/Ganti Ban - Site Motui",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f5f5f4",
+  "theme_color": "#d85a30",
+  "lang": "id",
+  "icons": [
+    { "src": "./favicon-32.png", "sizes": "32x32", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "categories": ["utilities", "productivity"],
+  "prefer_related_applications": false
+}

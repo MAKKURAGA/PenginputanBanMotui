@@ -1,0 +1,1999 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="theme-color" content="#ffffff"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="BAN MOTUI"/>
+<link rel="manifest" href="./manifest.json"/>
+<link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png"/>
+<link rel="apple-touch-icon" href="./apple-touch-icon.png"/>
+<title>BAN MAKKURAGA GRUP - Site Motui</title>
+<style>
+:root {
+  --white:    #ffffff;
+  --bg:       #f5f5f4;
+  --border:   #e5e5e3;
+  --border2:  #d4d4d0;
+  --accent:   #d85a30;
+  --accent-lt:#fff0eb;
+  --accent-dk:#b84520;
+  --ok:       #16a34a;
+  --ok-lt:    #f0fdf4;
+  --nok:      #dc2626;
+  --nok-lt:   #fef2f2;
+  --na:       #2563eb;
+  --na-lt:    #eff6ff;
+  --text:     #1c1917;
+  --text2:    #57534e;
+  --muted:    #a8a29e;
+  --radius:   12px;
+  --shadow:   0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+  --shadow-md:0 4px 12px rgba(0,0,0,.1);
+}
+* { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+html,body { height:100%; background:var(--bg); color:var(--text); font-family:'Segoe UI',system-ui,-apple-system,sans-serif; font-size:14px; overscroll-behavior-y:contain; }
+
+/* ── TOPBAR ── */
+#app { display:flex; flex-direction:column; height:100%; }
+.topbar {
+  background:var(--white); border-bottom:1px solid var(--border);
+  padding:10px 16px; display:flex; align-items:center; gap:10px;
+  position:sticky; top:0; z-index:100; box-shadow:var(--shadow);
+}
+.topbar-left { display:flex; align-items:center; gap:10px; }
+.topbar-logo { width:36px; height:36px; border-radius:9px; overflow:hidden; flex-shrink:0; }
+.topbar-logo img { width:36px; height:36px; display:block; object-fit:cover; }
+.topbar-text .brand { font-size:13px; font-weight:800; color:var(--text); letter-spacing:-0.2px; }
+.topbar-text .sub   { font-size:10px; color:var(--muted); }
+.sync-btn {
+  background:var(--accent); color:#fff; border:none; border-radius:8px;
+  padding:7px 12px; font-size:12px; font-weight:700; cursor:pointer;
+  display:flex; align-items:center; gap:5px; transition:background .15s;
+}
+.sync-btn:hover { background:var(--accent-dk); }
+.sync-btn:disabled { opacity:.5; cursor:not-allowed; }
+.refresh-btn {
+  width:36px; height:36px; flex-shrink:0; background:var(--white);
+  border:1.5px solid var(--border); border-radius:9px; font-size:16px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+}
+.refresh-btn:hover { border-color:var(--accent); background:var(--accent-lt); }
+.refresh-btn:active:not(:disabled) { transform:scale(0.9); }
+.refresh-btn:disabled { opacity:.5; cursor:not-allowed; }
+.refresh-btn.spinning { animation:spin .8s linear infinite; }
+.sync-badge { background:#fff; color:var(--accent); border-radius:20px; padding:1px 6px; font-size:10px; font-weight:800; min-width:16px; text-align:center; }
+
+/* ── PAGES ── */
+.page { display:none; flex:1; overflow-y:auto; overscroll-behavior-y:contain; padding-bottom:88px; }
+.page.active { display:block; }
+
+/* ── BOTTOM NAV ── */
+.bottom-nav {
+  background:var(--white); border-top:1px solid var(--border); display:flex;
+  position:fixed; bottom:0; left:0; right:0; z-index:100; box-shadow:0 -1px 8px rgba(0,0,0,.06);
+}
+.bnav-item {
+  flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:8px 4px 10px; gap:3px; cursor:pointer; border:none; background:none;
+  color:var(--muted); font-size:10px; font-weight:600; transition:color .15s; position:relative;
+}
+.bnav-item.active { color:var(--accent); }
+.bnav-item svg { width:22px; height:22px; }
+.bnav-badge {
+  position:absolute; top:2px; right:calc(50% - 18px); background:var(--nok); color:#fff;
+  font-size:10px; font-weight:700; min-width:16px; height:16px; border-radius:8px; padding:0 4px;
+  display:flex; align-items:center; justify-content:center; line-height:1;
+}
+
+/* ── OFFLINE BANNER ── */
+.offline-banner {
+  background:#fefce8; border:1px solid #fde047; color:#854d0e; border-radius:10px;
+  padding:10px 14px; font-size:12px; font-weight:500; margin:12px 16px 0;
+  display:none; align-items:center; gap:8px;
+}
+.offline-banner.show { display:flex; }
+
+/* ── HOME ── */
+.home-header { background:var(--white); padding:20px 16px 16px; border-bottom:1px solid var(--border); }
+.home-header h1 { font-size:20px; font-weight:800; color:var(--text); letter-spacing:-0.5px; }
+.home-header p  { color:var(--muted); font-size:12px; margin-top:3px; }
+.stat-row { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; padding:14px 16px 4px; }
+.stat-box { background:var(--white); border:1px solid var(--border); border-radius:12px; padding:14px 10px; text-align:center; box-shadow:var(--shadow); }
+.stat-box .val { font-size:26px; font-weight:800; color:var(--accent); line-height:1; }
+.stat-box .lbl { font-size:10px; color:var(--muted); margin-top:4px; line-height:1.3; }
+.section-header { padding:16px 16px 8px; font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.8px; }
+
+.act-card {
+  display:flex; align-items:center; gap:16px; background:var(--white);
+  border:2px solid var(--accent); border-radius:16px; padding:18px; margin:0 16px 14px;
+  cursor:pointer; box-shadow:0 4px 16px rgba(216,90,48,.15); transition:transform .1s;
+}
+.act-card:active { transform:scale(0.98); }
+.act-card.lepas { border-color:var(--na); box-shadow:0 4px 16px rgba(37,99,235,.13); }
+.act-card.ganti { border-color:var(--ok); box-shadow:0 4px 16px rgba(22,163,74,.15); }
+.act-card .icon-wrap { width:64px; height:64px; border-radius:50%; background:var(--accent-lt); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.act-card.lepas .icon-wrap { background:var(--na-lt); }
+.act-card.ganti .icon-wrap { background:var(--ok-lt); }
+.act-card .icon-wrap svg { width:38px; height:38px; }
+.act-card .info { flex:1; }
+.act-card .info .label { font-weight:800; font-size:17px; color:var(--text); }
+.act-card .info .sub   { font-size:12px; color:var(--muted); margin-top:3px; }
+.act-card .arrow { font-size:22px; color:var(--accent); }
+.act-card.lepas .arrow { color:var(--na); }
+.act-card.ganti .arrow { color:var(--ok); }
+.mini-section-note { padding:4px 16px 8px; font-size:11px; color:var(--muted); }
+
+/* ── FORM ── */
+.form-header {
+  background:var(--white); border-bottom:1px solid var(--border); padding:12px 16px;
+  display:flex; align-items:center; gap:12px; position:sticky; top:0; z-index:50;
+}
+.back-btn { background:var(--bg); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:7px 12px; cursor:pointer; font-size:13px; font-weight:600; flex-shrink:0; }
+.back-btn:hover { background:var(--border); }
+.form-title-wrap .form-title { font-weight:800; font-size:15px; color:var(--text); }
+.form-title-wrap .form-sub   { font-size:11px; color:var(--muted); }
+.mode-pill { margin-left:auto; font-size:10px; font-weight:800; border-radius:20px; padding:3px 10px; }
+.mode-pill.pasang { background:var(--accent-lt); color:var(--accent); }
+.mode-pill.lepas  { background:var(--na-lt); color:var(--na); }
+.mode-pill.ganti  { background:var(--ok-lt); color:var(--ok); }
+.form-body { padding:14px 16px; }
+.form-section { margin-bottom:20px; }
+.section-label {
+  font-size:11px; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:0.8px;
+  margin-bottom:10px; padding-bottom:8px; border-bottom:2px solid var(--accent-lt);
+}
+.section-label.pill {
+  display:flex; align-items:center; gap:8px; color:#fff; font-size:13px;
+  background:linear-gradient(90deg, var(--accent), var(--accent-dk));
+  border:none; border-radius:10px; padding:12px 16px; margin-bottom:14px;
+  box-shadow:0 2px 6px rgba(184,69,32,.25);
+}
+.form-field { margin-bottom:12px; }
+.form-field label { display:block; font-size:13px; font-weight:600; color:var(--text2); margin-bottom:6px; }
+.form-field label .req { color:var(--nok); }
+.form-field label .opt { color:var(--muted); font-weight:400; }
+.form-field input, .form-field select {
+  width:100%; background:var(--white); border:1.5px solid var(--border); color:var(--text);
+  border-radius:9px; padding:10px 12px; font-size:14px; outline:none; font-family:inherit;
+  transition:border-color .15s; -webkit-appearance:none; appearance:none; min-height:44px;
+}
+.form-field select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%2357534e' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; padding-right:32px; }
+.form-field input:focus, .form-field select:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(216,90,48,.1); }
+.form-field input.upper { text-transform:uppercase; }
+.form-field .hint { font-size:11px; color:var(--muted); margin-top:5px; line-height:1.4; }
+.combo-wrap { position:relative; }
+.combo-list { display:none; position:absolute; left:0; right:0; top:calc(100% + 4px); background:var(--white); border:1.5px solid var(--border2); border-radius:10px; max-height:220px; overflow-y:auto; z-index:60; box-shadow:0 6px 18px rgba(0,0,0,.12); }
+.combo-item { padding:10px 14px; font-size:14px; cursor:pointer; border-bottom:1px solid var(--border); }
+.combo-item:last-child { border-bottom:none; }
+.combo-item:hover, .combo-item.hl { background:var(--accent-lt); }
+.combo-empty { padding:12px 14px; font-size:13px; color:var(--muted); }
+.info-box { background:var(--accent-lt); border:1px solid #fbd5c4; border-radius:10px; padding:10px 13px; margin-bottom:14px; font-size:12px; color:var(--accent-dk); line-height:1.5; }
+.info-box.ok   { background:var(--ok-lt); border-color:#bbf7d0; color:#166534; }
+.info-box.warn { background:#fffbeb; border-color:#fde68a; color:#92400e; }
+
+.photo-add {
+  display:flex; align-items:center; justify-content:center; gap:8px; width:100%;
+  border:1.5px dashed var(--border2); border-radius:9px; background:var(--white);
+  color:var(--text2); font-size:13px; font-weight:700; padding:12px; cursor:pointer;
+}
+.photo-add:active { background:var(--bg); }
+.photo-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:8px; }
+.photo-thumb { position:relative; aspect-ratio:1; border-radius:9px; overflow:hidden; border:1px solid var(--border); background:var(--bg); }
+.photo-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+.photo-thumb button { position:absolute; top:4px; right:4px; width:24px; height:24px; border-radius:50%; border:none; background:rgba(0,0,0,.6); color:#fff; font-size:13px; cursor:pointer; line-height:1; }
+
+.submit-btn {
+  width:100%; background:var(--accent); color:#fff; border:none; border-radius:12px;
+  padding:14px; font-size:15px; font-weight:800; cursor:pointer; margin-top:6px;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  transition:background .15s, transform .1s; letter-spacing:-0.2px;
+}
+.submit-btn:hover:not(:disabled) { background:var(--accent-dk); }
+.submit-btn:active:not(:disabled) { transform:scale(0.97); background:var(--accent-dk); }
+.submit-btn:disabled { opacity:.5; cursor:not-allowed; }
+
+/* ── HISTORY ── */
+.hist-header { padding:16px 16px 4px; }
+.hist-header h2 { font-size:18px; font-weight:800; letter-spacing:-0.3px; }
+.hist-header p  { font-size:12px; color:var(--muted); margin-top:2px; }
+.hist-filter { display:flex; gap:7px; padding:10px 16px 12px; overflow-x:auto; scrollbar-width:none; }
+.hist-filter::-webkit-scrollbar { display:none; }
+.hist-filter button { background:var(--white); border:1.5px solid var(--border); color:var(--text2); border-radius:20px; padding:5px 13px; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; }
+.hist-filter button.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+.hist-list { padding:0 16px; }
+.lap-date-filter { display:flex; align-items:center; gap:7px; padding:10px 16px 4px; }
+.lap-date-filter input[type="date"] { flex:1; background:var(--white); border:1.5px solid var(--border); color:var(--text); border-radius:10px; padding:7px 10px; font-size:13px; font-weight:600; }
+.lap-date-filter button { background:var(--white); border:1.5px solid var(--border); color:var(--text2); border-radius:10px; padding:7px 12px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; }
+.lap-date-filter button.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+.lap-header { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; padding:16px 16px 4px; flex-wrap:wrap; }
+.lap-header h2 { font-size:18px; font-weight:800; letter-spacing:-0.3px; }
+.lap-header p  { font-size:12px; color:var(--muted); margin-top:2px; }
+.lap-date-mini { display:flex; align-items:center; gap:6px; flex-shrink:0; flex-wrap:wrap; justify-content:flex-end; }
+.lap-date-mini input[type="date"] { width:112px; background:var(--white); border:1.5px solid var(--border); color:var(--text2); border-radius:9px; padding:6px 7px; font-size:13px; font-weight:600; }
+.lap-date-mini span { font-size:12px; color:var(--muted); }
+.lap-date-mini button { background:var(--accent); border:1.5px solid var(--accent); color:#fff; border-radius:9px; padding:7px 12px; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap; }
+#lapContent.lap-loading { opacity:.35; pointer-events:none; transition:opacity .15s; }
+.hist-item { background:var(--white); border:1.5px solid var(--border); border-radius:12px; margin-bottom:10px; padding:13px; display:flex; gap:12px; box-shadow:var(--shadow); cursor:pointer; }
+.hist-item .status-dot { width:9px; height:9px; border-radius:50%; margin-top:5px; flex-shrink:0; }
+.hist-item .status-dot.synced   { background:var(--ok); }
+.hist-item .status-dot.pending  { background:var(--accent); }
+.hist-item .status-dot.error    { background:var(--nok); }
+.hist-item .status-dot.rejected { background:var(--nok); }
+.hist-item .status-dot.remote   { background:var(--na); }
+.hist-item-info { flex:1; min-width:0; }
+.hist-item-info .unit { font-weight:700; font-size:13px; color:var(--text); }
+.hist-item-info .meta { font-size:13px; color:var(--muted); margin-top:2px; overflow-wrap:anywhere; }
+.hist-status { font-size:10px; font-weight:700; margin-top:5px; display:inline-block; border-radius:20px; padding:2px 8px; margin-right:4px; }
+.hist-status.synced   { background:var(--ok-lt); color:var(--ok); }
+.hist-status.pending  { background:var(--accent-lt); color:var(--accent); }
+.hist-status.error    { background:var(--nok-lt); color:var(--nok); }
+.hist-status.rejected { background:var(--nok); color:#fff; }
+.hist-status.remote   { background:var(--na-lt); color:var(--na); }
+
+/* ── LAPORAN ── */
+.lap-list { padding:0 16px 4px; }
+.lap-row {
+  display:flex; align-items:center; justify-content:space-between; background:var(--white);
+  border:1.5px solid var(--border); border-radius:10px; padding:11px 14px; margin-bottom:8px;
+  font-size:13px; font-weight:600; color:var(--text); cursor:pointer; transition:border-color .15s;
+}
+.lap-row[data-cat]:active { transform:scale(0.98); border-color:var(--accent); }
+.lap-row:not([data-cat]) { cursor:default; }
+.lap-row .muted { color:var(--muted); font-weight:500; }
+.lap-count {
+  background:var(--accent-lt); color:var(--accent); font-weight:800; font-size:12px;
+  border-radius:20px; padding:2px 10px; min-width:22px; text-align:center;
+}
+.hist-status.jp { background:var(--accent-lt); color:var(--accent); }
+.hist-status.jl { background:var(--na-lt); color:var(--na); }
+.hist-status.jg { background:var(--ok-lt); color:var(--ok); }
+
+/* ── SETTINGS ── */
+.settings-body { padding:16px; }
+.settings-section { margin-bottom:22px; }
+.settings-section h3 { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:10px; }
+.settings-row { background:var(--white); border:1.5px solid var(--border); border-radius:11px; padding:13px 14px; margin-bottom:8px; box-shadow:var(--shadow); }
+.settings-row label { font-size:12px; font-weight:600; color:var(--text2); display:block; margin-bottom:6px; }
+.settings-row input { width:100%; background:var(--bg); border:1.5px solid var(--border); color:var(--text); border-radius:8px; padding:9px 11px; font-size:13px; outline:none; font-family:inherit; }
+.settings-row input:focus { border-color:var(--accent); }
+.save-btn { width:100%; background:var(--accent); color:#fff; border:none; border-radius:11px; padding:13px; font-size:14px; font-weight:800; cursor:pointer; }
+.save-btn:hover { background:var(--accent-dk); }
+.outline-btn {
+  width:100%; background:var(--white); border:1.5px solid var(--accent); color:var(--accent);
+  border-radius:11px; padding:13px; font-size:14px; font-weight:700; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+}
+.danger-btn { width:100%; background:var(--white); border:1.5px solid var(--nok); color:var(--nok); border-radius:11px; padding:13px; font-size:14px; font-weight:700; cursor:pointer; margin-top:8px; }
+.danger-btn:hover { background:var(--nok-lt); }
+
+/* ── MODAL ── */
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:200; align-items:flex-end; justify-content:center; }
+.modal-overlay.show { display:flex; }
+.modal-box { background:var(--white); border-radius:20px 20px 0 0; width:100%; max-height:88vh; overflow-y:auto; padding:0 0 32px; box-shadow:0 -4px 24px rgba(0,0,0,.15); animation:slideUp .22s ease; }
+@keyframes slideUp { from{transform:translateY(60px);opacity:0} to{transform:translateY(0);opacity:1} }
+.modal-handle { width:40px; height:4px; background:var(--border2); border-radius:99px; margin:12px auto 0; }
+.modal-header { padding:14px 16px 10px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.modal-header h3 { font-size:15px; font-weight:800; color:var(--text); }
+.modal-close { background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:5px 11px; font-size:12px; font-weight:700; cursor:pointer; color:var(--text2); }
+.modal-body { padding:14px 16px; }
+.modal-meta { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px; }
+.modal-meta-item { background:var(--bg); border-radius:9px; padding:10px 11px; min-width:0; }
+.modal-meta-item .lbl { font-size:10px; color:var(--muted); font-weight:600; text-transform:uppercase; }
+.modal-meta-item .val { font-size:13px; font-weight:700; color:var(--text); margin-top:2px; overflow-wrap:anywhere; }
+.modal-section-lbl { font-size:10px; font-weight:800; color:var(--accent); text-transform:uppercase; letter-spacing:0.8px; margin:10px 0 5px; padding-left:2px; }
+.retry-btn { background:var(--accent-lt); border:1.5px solid var(--accent); color:var(--accent); border-radius:8px; padding:8px 14px; font-size:12px; font-weight:700; cursor:pointer; margin:8px 8px 0 0; }
+.retry-btn:active { background:var(--accent); color:#fff; }
+.retry-btn.danger { background:var(--white); border-color:var(--nok); color:var(--nok); }
+
+/* ── CONFIRM ── */
+.confirm-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:300; align-items:center; justify-content:center; padding:20px; }
+.confirm-overlay.show { display:flex; }
+.confirm-box { background:var(--white); border-radius:16px; padding:24px 20px; width:100%; max-width:320px; text-align:center; box-shadow:var(--shadow-md); animation:fadeIn .18s ease; }
+@keyframes fadeIn { from{opacity:0;transform:scale(.95)} to{opacity:1;transform:scale(1)} }
+.confirm-box .icon { font-size:36px; margin-bottom:10px; }
+.confirm-box h4 { font-size:16px; font-weight:800; color:var(--text); margin-bottom:6px; }
+.confirm-box p  { font-size:13px; color:var(--text2); line-height:1.5; margin-bottom:18px; }
+.confirm-btns { display:flex; gap:10px; }
+.confirm-btns button { flex:1; padding:11px; border-radius:10px; font-size:13px; font-weight:700; cursor:pointer; border:none; }
+.confirm-cancel { background:var(--bg); color:var(--text2); border:1.5px solid var(--border) !important; }
+.confirm-ok     { background:var(--accent); color:#fff; }
+.confirm-ok.danger { background:var(--nok); }
+
+/* ── EMPTY / TOAST / SPINNER ── */
+.empty-state { text-align:center; padding:48px 20px; color:var(--muted); }
+.empty-state .icon { font-size:42px; margin-bottom:12px; }
+.empty-state p { font-size:13px; }
+#toast {
+  position:fixed; bottom:96px; left:50%; transform:translateX(-50%); background:var(--text); color:#fff;
+  border-radius:20px; padding:10px 18px; font-size:13px; font-weight:600; z-index:999; opacity:0;
+  transition:opacity .25s; max-width:88vw; text-align:center; box-shadow:var(--shadow-md); pointer-events:none;
+}
+#toast.show { opacity:1; }
+#toast.ok-toast  { background:var(--ok); }
+#toast.err-toast { background:var(--nok); }
+.spinner { display:inline-block; width:16px; height:16px; border:2.5px solid rgba(255,255,255,.3); border-top-color:#fff; border-radius:50%; animation:spin .6s linear infinite; }
+.outline-btn .spinner { border-color:rgba(216,90,48,.25); border-top-color:var(--accent); }
+@keyframes spin { to { transform:rotate(360deg); } }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo"><img src="data:image/png;base64,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" alt="Makkuraga Grup"/></div>
+      <div class="topbar-text">
+        <div class="brand">BAN MAKKURAGA GRUP</div>
+        <div class="sub">Site Motui</div>
+      </div>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:8px;">
+      <button class="refresh-btn" id="masterRefreshBtn" onclick="handleTopRefresh()" title="Sync data">🔄</button>
+      <button class="sync-btn" id="syncBtn" onclick="syncAll(true)">↑ Sync <span class="sync-badge" id="syncBadge" style="display:none">0</span></button>
+    </div>
+  </div>
+
+  <!-- PAGE: HOME -->
+  <div class="page active" id="page-home">
+    <div class="home-header">
+      <h1>Monitoring Ban</h1>
+      <p id="homeDate" style="color:var(--text2);font-size:13px;font-weight:500;margin-top:4px;"></p>
+    </div>
+    <div class="offline-banner" id="offlineBanner">📡 Mode Offline — data tersimpan di HP, sync otomatis saat online</div>
+    <div class="offline-banner" id="noGasBanner">⚠ URL GAS belum diisi di index.html. Data hanya tersimpan di HP.</div>
+
+    <div class="stat-row">
+      <div class="stat-box"><div class="val" id="statToday">0</div><div class="lbl">Input Hari Ini</div></div>
+      <div class="stat-box"><div class="val" id="statPending">0</div><div class="lbl">Belum Sync</div></div>
+    </div>
+
+    <div class="section-header">Ganti Ban</div>
+    <div class="act-card ganti" onclick="openForm('ganti')">
+      <div class="icon-wrap">
+        <svg viewBox="0 0 40 40" fill="none" stroke="#16a34a" stroke-width="2.4" stroke-linecap="round"><path d="M6 14a14 14 0 0 1 24-8l4-2v10H24l4-3a10 10 0 0 0-17 5" stroke-width="2.2"/><path d="M34 26a14 14 0 0 1-24 8l-4 2V26h10l-4 3a10 10 0 0 0 17-5" stroke-width="2.2"/></svg>
+      </div>
+      <div class="info"><div class="label">Ganti Ban</div><div class="sub">Lepas ban lama & pasang ban baru sekaligus — 1x input</div></div>
+      <div class="arrow">›</div>
+    </div>
+
+    <div class="section-header">Kasus Lain</div>
+    <div class="mini-section-note">Cuma lepas atau cuma pasang tanpa penggantian langsung (unit baru, posisi jadi kosong, dll).</div>
+    <div class="act-card" onclick="openForm('pasang')">
+      <div class="icon-wrap">
+        <svg viewBox="0 0 40 40" fill="none" stroke="#d85a30" stroke-width="2.4" stroke-linecap="round"><circle cx="20" cy="20" r="16"/><circle cx="20" cy="20" r="6"/><path d="M20 4v6M20 30v6M4 20h6M30 20h6M8.7 8.7l4.2 4.2M27.1 27.1l4.2 4.2M31.3 8.7l-4.2 4.2M12.9 27.1l-4.2 4.2" stroke-width="1.8"/></svg>
+      </div>
+      <div class="info"><div class="label">Pemasangan Ban</div><div class="sub">Catat ban yang dipasang ke unit (tanpa pelepasan)</div></div>
+      <div class="arrow">›</div>
+    </div>
+    <div class="act-card lepas" onclick="openForm('lepas')">
+      <div class="icon-wrap">
+        <svg viewBox="0 0 40 40" fill="none" stroke="#2563eb" stroke-width="2.4" stroke-linecap="round"><circle cx="20" cy="20" r="16"/><circle cx="20" cy="20" r="6"/><path d="M20 4v6M20 30v6M4 20h6M30 20h6M8.7 8.7l4.2 4.2M27.1 27.1l4.2 4.2M31.3 8.7l-4.2 4.2M12.9 27.1l-4.2 4.2" stroke-width="1.8"/></svg>
+      </div>
+      <div class="info"><div class="label">Pelepasan Ban</div><div class="sub">Catat ban yang dilepas dari unit (tanpa pengganti)</div></div>
+      <div class="arrow">›</div>
+    </div>
+  </div>
+
+  <!-- PAGE: FORM -->
+  <div class="page" id="page-form">
+    <div class="form-header">
+      <button class="back-btn" onclick="askGoHome()">← Kembali</button>
+      <div class="form-title-wrap">
+        <div class="form-title" id="formTitle">Form Ban</div>
+        <div class="form-sub" id="formSubtitle"></div>
+      </div>
+      <span class="mode-pill" id="modePill"></span>
+    </div>
+    <div class="form-body" id="formBody"></div>
+  </div>
+
+  <!-- PAGE: HISTORY -->
+  <div class="page" id="page-history">
+    <div class="hist-header"><h2>Riwayat Hari Ini</h2><p id="histCount">—</p></div>
+    <div class="mini-section-note" style="padding-top:0">Riwayat hari-hari sebelumnya tidak disimpan di sini — cek Spreadsheet untuk data lama.</div>
+    <div class="hist-filter" id="histFilter">
+      <button class="active" data-f="all">Semua</button>
+      <button data-f="pending">⏳ Pending</button>
+      <button data-f="synced">✅ Terkirim</button>
+      <button data-f="rejected">⛔ Ditolak</button>
+    </div>
+    <div class="hist-list" id="histList"></div>
+  </div>
+
+  <!-- PAGE: LAPORAN -->
+  <div class="page" id="page-laporan">
+    <div class="lap-header">
+      <div><h2 id="lapTitle">Laporan Pemakaian</h2><p id="lapDate">—</p></div>
+      <div class="lap-date-mini">
+        <input type="date" id="lapDateFromInput" onchange="onLapFromChange()"/>
+        <span>s/d</span>
+        <input type="date" id="lapDateToInput" onchange="onLapToChange()"/>
+        <button id="lapWaBtn" onclick="copyLaporanToWA()">📋 Salin ke WA</button>
+      </div>
+    </div>
+    <div class="mini-section-note" style="padding-top:0">Rekap Penginputan per rentang tanggal (terakumulasi), semua HP. Untuk rekap per periode/bulanan, lihat Spreadsheet.</div>
+    <p id="lapLoadingNote" class="mini-section-note" style="padding:0 16px 6px;display:none;color:var(--accent)">Memuat data server untuk tanggal ini…</p>
+    <div id="lapContent">
+      <div class="stat-row" style="grid-template-columns:1fr">
+        <div class="stat-box" id="lapPemakaianBox" style="cursor:pointer" onclick="showLapPemakaianTotal()"><div class="val" id="lapPemakaian">0</div><div class="lbl">Pemakaian Ban</div></div>
+      </div>
+      <div class="section-header">Rincian No Seri/Kode Ban Terpasang</div>
+      <div class="lap-list" id="lapSeriList"></div>
+      <div class="section-header">Rincian Kode Ban Luar Terpasang</div>
+      <div class="lap-list" id="lapKodeBanLuarList"></div>
+      <div class="section-header">Rincian Ban Dalam Dipakai</div>
+      <div class="lap-list" id="lapBanDalamList"></div>
+      <div class="section-header">Rincian Lidah Ban Dipakai</div>
+      <div class="lap-list" id="lapLidahList"></div>
+    </div>
+  </div>
+
+  <!-- PAGE: SETTINGS -->
+  <div class="page" id="page-settings">
+    <div class="home-header"><h1>Pengaturan</h1><p>Profil penginput dan data master</p></div>
+    <div class="settings-body">
+      <div class="settings-section">
+        <h3>👤 Profil</h3>
+        <div class="settings-row">
+          <label for="defNama">Nama Penginput (dipakai otomatis di semua form)</label>
+          <select id="defNama">
+            <option value="">-- Pilih Nama --</option>
+            <option>YOHANIS TALO</option>
+            <option>MUHAMMAD FATHIR AS.</option>
+            <option>RIFALDY SUSANTO TRAHA</option>
+            <option>MUH. FAISAL ADI</option>
+          </select>
+        </div>
+      </div>
+      <button class="save-btn" onclick="saveSettings()">💾 Simpan Profil</button>
+
+      <div class="settings-section" style="margin-top:20px">
+        <h3>🔄 Data Master</h3>
+        <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Tarik daftar unit, pilihan dropdown, dan daftar ban yang sedang terpasang dari server. Ban terpasang dipakai untuk auto-isi form Pelepasan saat offline.</p>
+        <p style="font-size:11px;color:var(--muted);margin-bottom:10px" id="masterLastSync">Belum pernah sync.</p>
+        <button class="outline-btn" id="masterSyncBtn" onclick="syncMaster(true)">🔄 Sync Data Master</button>
+      </div>
+
+      <button class="danger-btn" onclick="clearData()" style="margin-top:20px">🗑 Hapus Semua Data Lokal</button>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav">
+    <button class="bnav-item active" id="nav-home" onclick="safeShowPage('home')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Beranda
+    </button>
+    <button class="bnav-item" id="nav-history" onclick="safeShowPage('history')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Riwayat
+      <span class="bnav-badge" id="rejectBadge" style="display:none">0</span>
+    </button>
+    <button class="bnav-item" id="nav-laporan" onclick="safeShowPage('laporan')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Laporan
+    </button>
+    <button class="bnav-item" id="nav-settings" onclick="safeShowPage('settings')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      Pengaturan
+    </button>
+  </div>
+</div>
+
+<!-- MODAL DETAIL -->
+<div class="modal-overlay" id="detailModal" onclick="if(event.target===this)closeDetail()">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-header"><h3 id="detailTitle">Detail</h3><button class="modal-close" onclick="closeDetail()">✕ Tutup</button></div>
+    <div class="modal-body" id="detailBody"></div>
+  </div>
+</div>
+
+<!-- CONFIRM -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <div class="icon" id="cfIcon">❓</div>
+    <h4 id="cfTitle"></h4>
+    <p id="cfText"></p>
+    <div class="confirm-btns">
+      <button class="confirm-cancel" id="cfNo">Batal</button>
+      <button class="confirm-ok" id="cfYes">Ya</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<datalist id="dl_unit"></datalist>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// KONFIGURASI
+// ══════════════════════════════════════════════════════════
+// Isi dengan URL Web App hasil deploy Code.gs (…/exec)
+// URL Web App Apps Script milik spreadsheet PENGINPUTAN BAN MOTUI. Jangan diganti ke URL Kolonodale.
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxskcwG58L0CqwHCGBqmlQrR1J-i1A3KFWzl2BkjsPrOHp72yCpWPeMQUtX0GnKIP4/exec';
+const HAS_GAS = /^https:\/\//.test(GAS_URL);
+
+// Cadangan sebelum "Sync Data Master" pertama. Sumber utama ada di CONFIG.LIST (Code.gs).
+const DEFAULT_MASTER = {
+  units: [],
+  lists: {
+    merek: ['Bridgestone','Michelin','Goodyear','Dunlop','Advance','Triangle','Linglong','GT Radial','Aeolus','Techking'],
+    kodeBanLuar: [],
+    banDalam: [],
+    lidahBan: [],
+    pit: [],
+    noSeriBan: [],
+    tekananAngin: [],
+    posisi: ['Depan Kiri','Depan Kanan','Belakang Kiri Luar','Belakang Kiri Dalam','Belakang Kanan Luar','Belakang Kanan Dalam','Cadangan'],
+    jenisKerusakan: ['Aus Normal','Bocor / Tusukan','Sobek / Robek Samping','Benjol / Bulge','Kupas Tapak','Panas / Blow Out','Pecah Velg','Lainnya'],
+    statusAkhir: ['Scrap','Repair','Vulkanisir / Retread','Dipasang Ulang','Cadangan']
+  },
+  tanpaFoto: 'Aus Normal', maxFoto: 3, active: [], syncedAt: null
+};
+let MASTER = JSON.parse(JSON.stringify(DEFAULT_MASTER));
+
+const FORMS = {
+  pasang: {
+    jenis: 'Pemasangan Ban', title: 'Pemasangan Ban', sub: 'Catat ban yang dipasang ke unit',
+    sections: [
+      { label: 'Unit & Ban', fields: [
+        { col:'Nama Penginput', type:'nama', req:true },
+        { col:'Tanggal Pemasangan', type:'date', req:true },
+        { col:'ID Unit', type:'unit', req:true },
+        { col:'KM Pasang', type:'number', req:true },
+        { col:'No Seri/Kode Ban', type:'seri', list:'noSeriBan', req:true },
+        { col:'Merek Ban', label:'Merek Ban Luar', type:'text', req:true, upper:true },
+        { col:'Kode Ban Luar', type:'select', list:'kodeBanLuar', hint:'Kode/spesifikasi ban luar dari Master Data. Daftar otomatis disaring sesuai Tipe Ban (12R24/12R20) yang dipilih.' },
+        { col:'Tipe Ban', type:'tipeban', req:true },
+        { col:'Posisi Ban', type:'select', list:'posisi', req:true },
+        { col:'Geser Ban Lama Ke', label:'Geser Ban Lama Ke (opsional)', type:'geser', hint:'Kosongkan kalau posisi ini kosong. Isi hanya kalau di posisi ini masih ada ban lama yang DIPINDAH ke posisi lain (bukan dilepas). Ban lama tetap satu riwayat — umurnya tidak putus.' }
+      ]},
+      { label: 'Ban Dalam & Tekanan', fields: [
+        { col:'Merek Ban Dalam', type:'select', list:'banDalam', hint:'Kosongkan jika ban tubeless. Pilihan dari Master Data kolom E — otomatis disaring sesuai Tipe Ban.' },
+        { col:'Lidah Ban', type:'select', list:'lidahBan', hint:'Kosongkan jika tidak ada. Pilihan dari Master Data kolom F — otomatis disaring sesuai Tipe Ban.' },
+        { col:'Tekanan Angin (PSI)', type:'tekanan', list:'tekananAngin', req:true, hint:'Pilihan dari Master Data kolom D.' }
+      ]},
+      { label: 'Penanganan', fields: [
+        { col:'Jam Penanganan', type:'time', req:true },
+        { col:'Jam Ready', type:'time', req:true },
+        { col:'Lokasi Penanganan', type:'lokasi', req:true },
+        { col:'Nama Mekanik', type:'text', req:true }
+      ]}
+    ]
+  },
+  lepas: {
+    jenis: 'Pelepasan Ban', title: 'Pelepasan Ban', sub: 'Catat ban yang dilepas dari unit',
+    sections: [
+      { label: 'Ban yang Dilepas', fields: [
+        { col:'Nama Penginput', type:'nama', req:true },
+        { col:'No Seri Pelepasan', type:'seri', list:'noSeriBan', req:true, lookup:true, hint:'' },
+        { col:'Tanggal Pelepasan', type:'date', req:true },
+        { col:'ID Unit Pelepasan', type:'unit', req:true },
+        { col:'KM Lepas', type:'number', req:true },
+        { col:'Merek Ban Pelepasan', type:'text', req:true, upper:true },
+        { col:'Tipe Ban Lepas', type:'tipeban', req:true },
+        { col:'Posisi Ban Pelepasan', type:'select', list:'posisi', req:true }
+      ]},
+      { label: 'Kondisi Saat Dilepas', fields: [
+        { col:'Pit', type:'select', list:'pit', req:true },
+        { col:'Jenis Kerusakan', type:'select', list:'jenisKerusakan', req:true },
+        { col:'Status Akhir', type:'select', list:'statusAkhir', req:true },
+        { col:'Nama Driver', type:'text', req:true },
+        { col:'Upload Foto Kerusakan', type:'file' }
+      ]}
+    ]
+  }
+};
+// pemetaan kolom form → kolom ban yang dibaca untuk auto-isi
+const LOOKUP_FILL = {
+  'ID Unit Pelepasan':'unit', 'Merek Ban Pelepasan':'merek', 'Tipe Ban Lepas':'tipe', 'Posisi Ban Pelepasan':'posisi'
+};
+
+FORMS.ganti = {
+  jenis: 'Penggantian Ban', title: 'Ganti Ban', sub: 'Lepas ban lama & pasang ban baru dalam satu input',
+  sections: [
+    { label: 'Data Unit', icon: '🔧', fields: [
+      { col:'Nama Penginput', type:'nama', req:true },
+      { col:'Tanggal', type:'date', req:true },
+      { col:'ID Unit', type:'unit', req:true },
+      { col:'Posisi Ban', type:'select', list:'posisi', req:true },
+      { col:'KM Lepas', label:'KM Unit', type:'number', req:true, hint:'KM saat ban lama dilepas = KM saat ban baru dipasang (kejadian yang sama). Terisi otomatis ke KM Lepas & KM Pasang.' },
+      { col:'Tipe Ban', type:'tipeban', req:true, hint:'Satu input untuk ban lama & ban baru. Terisi otomatis ke Tipe Ban & Tipe Ban Lepas.' }
+    ]},
+    { label: 'Pelepasan Ban', icon: '🔧', fields: [
+      { col:'No Seri Pelepasan', type:'seri', list:'noSeriBan', req:true, lookup:true, hint:'' },
+      { col:'Merek Ban Pelepasan', type:'text', req:true, upper:true },
+      { col:'Pit', type:'select', list:'pit', req:true },
+      { col:'Jenis Kerusakan', type:'select', list:'jenisKerusakan', req:true },
+      { col:'Status Akhir', type:'select', list:'statusAkhir', req:true },
+      { col:'Nama Driver', type:'text', req:true },
+      { col:'Upload Foto Kerusakan', type:'file' }
+    ]},
+    { label: 'Pemasangan Ban', icon: '🔧', fields: [
+      { col:'No Seri/Kode Ban', type:'seri', list:'noSeriBan', req:true },
+      { col:'Merek Ban', label:'Merek Ban Luar', type:'text', req:true, upper:true },
+      { col:'Kode Ban Luar', type:'select', list:'kodeBanLuar', hint:'Kode/spesifikasi ban luar dari Master Data. Daftar otomatis disaring sesuai Tipe Ban (12R24/12R20) yang dipilih.' },
+      { col:'Merek Ban Dalam', type:'select', list:'banDalam', hint:'Kosongkan jika ban tubeless. Pilihan dari Master Data kolom E — otomatis disaring sesuai Tipe Ban.' },
+      { col:'Lidah Ban', type:'select', list:'lidahBan', hint:'Kosongkan jika tidak ada. Pilihan dari Master Data kolom F — otomatis disaring sesuai Tipe Ban.' },
+      { col:'Tekanan Angin (PSI)', type:'tekanan', list:'tekananAngin', req:true, hint:'Pilihan dari Master Data kolom D.' },
+      { col:'Jam Penanganan', type:'time', req:true },
+      { col:'Jam Ready', type:'time', req:true },
+      { col:'Lokasi Penanganan', type:'lokasi', req:true },
+      { col:'Nama Mekanik', type:'text', req:true }
+    ]}
+  ]
+};
+// kolom form gabungan → nama kolom asli yang dipakai backend, dipisah per sisi (lepas/pasang)
+const GANTI_MAP = {
+  lepas: {
+    'Nama Penginput':'Nama Penginput', 'Tanggal':'Tanggal Pelepasan', 'ID Unit':'ID Unit Pelepasan', 'Posisi Ban':'Posisi Ban Pelepasan',
+    'No Seri Pelepasan':'No Seri Pelepasan', 'KM Lepas':'KM Lepas', 'Merek Ban Pelepasan':'Merek Ban Pelepasan', 'Tipe Ban Lepas':'Tipe Ban Lepas',
+    'Pit':'Pit', 'Jenis Kerusakan':'Jenis Kerusakan', 'Status Akhir':'Status Akhir', 'Nama Driver':'Nama Driver'
+  },
+  pasang: {
+    'Nama Penginput':'Nama Penginput', 'Tanggal':'Tanggal Pemasangan', 'ID Unit':'ID Unit', 'Posisi Ban':'Posisi Ban',
+    'No Seri/Kode Ban':'No Seri/Kode Ban', 'KM Pasang':'KM Pasang', 'Merek Ban':'Merek Ban', 'Kode Ban Luar':'Kode Ban Luar', 'Tipe Ban':'Tipe Ban',
+    'Merek Ban Dalam':'Merek Ban Dalam', 'Lidah Ban':'Lidah Ban', 'Tekanan Angin (PSI)':'Tekanan Angin (PSI)',
+    'Jam Penanganan':'Jam Penanganan', 'Jam Ready':'Jam Ready', 'Lokasi Penanganan':'Lokasi Penanganan', 'Nama Mekanik':'Nama Mekanik'
+  }
+};
+const JENIS_LABEL = { pasang: 'Pemasangan', lepas: 'Pelepasan', ganti: 'Ganti Ban' };
+const JENIS_CLASS = { pasang: 'jp', lepas: 'jl', ganti: 'jg' };
+
+// ══════════════════════════════════════════════════════════
+// UTIL
+// ══════════════════════════════════════════════════════════
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad = n => String(n).padStart(2, '0');
+const todayIso = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
+const isoToId = s => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s || ''); return m ? `${m[3]}/${m[2]}/${m[1]}` : (s || '-'); };
+const normSeri = s => String(s || '').trim().toUpperCase().replace(/\s+/g, ' ');
+const uuid = () => (window.crypto && crypto.randomUUID) ? crypto.randomUUID()
+  : 'c' + Date.now() + '_' + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+const DATE_COLS = ['Tanggal Pemasangan', 'Tanggal Pelepasan'];
+const FIELD_LABEL_OVERRIDE = { 'Merek Ban': 'Merek Ban Luar' }; // label tampilan saja; key data/kolom sheet tidak berubah
+
+let db = null, currentPage = 'home', currentForm = null, formDirty = false, formPhotos = [];
+let editingLocalId = null; // null = form input baru; angka = sedang mengedit record yang sudah ada
+let editingStatus = null;  // status record yang sedang diedit (pending/error/rejected/synced)
+let settings = {}, currentFilter = 'all', toastTimer = null, _isSyncing = false, _lastOnlineState = navigator.onLine;
+let remoteRows = [], _remoteFetchedAt = null, remoteRowsDate = null;
+let remoteGantiPairs = new Map(); // diisi ulang tiap renderHistory() — base clientId -> { lepas, pasang }
+const JENIS_REMOTE_MAP = { 'Pemasangan Ban': 'pasang', 'Pelepasan Ban': 'lepas' };
+let _submitting = false; // cegah tap ganda pada tombol Simpan memicu 2 baris di spreadsheet
+
+function toast(msg, type, duration) {
+  const el = $('toast');
+  el.textContent = msg;
+  el.className = 'show' + (type === 'ok' ? ' ok-toast' : type === 'err' ? ' err-toast' : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.className = '', duration || 3000);
+}
+
+function askConfirm({ icon = '❓', title, text, okText = 'Ya', danger = false }) {
+  return new Promise(resolve => {
+    $('cfIcon').textContent = icon; $('cfTitle').textContent = title; $('cfText').textContent = text;
+    const yes = $('cfYes'), no = $('cfNo');
+    yes.textContent = okText; yes.className = 'confirm-ok' + (danger ? ' danger' : '');
+    const done = v => { $('confirmOverlay').classList.remove('show'); yes.onclick = no.onclick = null; resolve(v); };
+    yes.onclick = () => done(true); no.onclick = () => done(false);
+    $('confirmOverlay').classList.add('show');
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// INDEXEDDB
+// ══════════════════════════════════════════════════════════
+function initDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('BanDB_Motui', 1);
+    req.onupgradeneeded = e => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains('records')) {
+        const s = d.createObjectStore('records', { keyPath: 'localId', autoIncrement: true });
+        s.createIndex('status', 'status');
+      }
+      if (!d.objectStoreNames.contains('settings')) d.createObjectStore('settings', { keyPath: 'key' });
+    };
+    req.onsuccess = e => { db = e.target.result; resolve(); };
+    req.onerror = () => reject(req.error);
+  });
+}
+const dbReq = (store, mode, fn) => new Promise((res, rej) => {
+  const tx = db.transaction(store, mode); const r = fn(tx.objectStore(store));
+  r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+});
+const dbPut    = (store, data) => dbReq(store, 'readwrite', s => s.put(data));
+const dbGetAll = store => dbReq(store, 'readonly', s => s.getAll());
+const dbGet    = (store, key) => dbReq(store, 'readonly', s => s.get(key));
+const dbDelete = (store, key) => dbReq(store, 'readwrite', s => s.delete(key));
+const dbClear  = store => dbReq(store, 'readwrite', s => s.clear());
+function dbUpdate(store, key, updates) {
+  return new Promise((res, rej) => {
+    const tx = db.transaction(store, 'readwrite'), obj = tx.objectStore(store), g = obj.get(key);
+    g.onsuccess = () => { const p = obj.put({ ...g.result, ...updates }); p.onsuccess = () => res(); p.onerror = () => rej(p.error); };
+    g.onerror = () => rej(g.error);
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// SETTINGS & MASTER
+// ══════════════════════════════════════════════════════════
+async function loadSettings() {
+  const s = await dbGet('settings', 'profile');
+  settings = (s && s.value) || {};
+  $('defNama').value = settings.nama || '';
+  const m = await dbGet('settings', 'master');
+  if (m && m.value) { MASTER = { ...DEFAULT_MASTER, ...m.value }; }
+  applyMasterToDatalists(); updateMasterLabel();
+  // Service worker perlu tahu URL server untuk Background Sync
+  if (HAS_GAS) await dbPut('settings', { key: 'gasUrl', value: GAS_URL });
+}
+async function saveSettings() {
+  settings.nama = $('defNama').value.trim();
+  await dbPut('settings', { key: 'profile', value: settings });
+  toast('✅ Profil tersimpan', 'ok');
+}
+function applyMasterToDatalists() {
+  $('dl_unit').innerHTML = (MASTER.units || []).map(u => `<option value="${esc(u)}">`).join('');
+}
+function updateMasterLabel() {
+  const el = $('masterLastSync');
+  if (!MASTER.syncedAt) { el.textContent = 'Belum pernah sync. Memakai daftar bawaan.'; return; }
+  const d = new Date(MASTER.syncedAt);
+  el.textContent = `Terakhir sync: ${d.toLocaleDateString('id-ID')} ${pad(d.getHours())}:${pad(d.getMinutes())} — ${MASTER.units.length} unit.`;
+}
+
+async function syncMaster(showToast) {
+  if (!HAS_GAS) { if (showToast) toast('⚠ URL GAS belum diisi', 'err'); return; }
+  const btn = $('masterSyncBtn'), top = $('masterRefreshBtn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Sync...'; }
+  if (top) { top.disabled = true; top.classList.add('spinning'); }
+  try {
+    const ctrl = new AbortController(), tid = setTimeout(() => ctrl.abort(), 20000);
+    const res = await fetch(GAS_URL + '?action=getMaster', { method: 'GET', redirect: 'follow', signal: ctrl.signal });
+    clearTimeout(tid);
+    let json = null; try { json = JSON.parse(await res.text()); } catch (e) {}
+    if (json && json.status === 'ok') {
+      MASTER = { units: json.units || [], lists: json.lists || DEFAULT_MASTER.lists, tanpaFoto: json.tanpaFoto || 'Aus Normal',
+                 maxFoto: json.maxFoto || 3, active: json.active || [], syncedAt: new Date().toISOString() };
+      await dbPut('settings', { key: 'master', value: MASTER });
+      applyMasterToDatalists(); updateMasterLabel(); updateStats();
+      if (showToast) toast('✅ Data master diperbarui', 'ok');
+    } else if (showToast) toast('❌ Gagal ambil data master: ' + ((json && json.message) || 'respons tidak valid'), 'err');
+  } catch (e) {
+    if (showToast) toast('❌ ' + (e.name === 'AbortError' ? 'Timeout' : e.message), 'err');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '🔄 Sync Data Master'; }
+    if (top) { top.disabled = false; top.classList.remove('spinning'); }
+  }
+}
+
+// Ban yang masih terpasang = cache server + catatan lokal yang BELUM tercermin di cache
+async function activeMap() {
+  const m = new Map();
+  (MASTER.active || []).forEach(a => m.set(normSeri(a.seri), a));
+  const since = MASTER.syncedAt || '';
+  const recs = (await dbGetAll('records'))
+    .filter(r => r.status !== 'rejected' && (r.status !== 'synced' || (r.syncedAt || '') > since))
+    .sort((a, b) => a.createdAt < b.createdAt ? -1 : 1);
+  recs.forEach(r => {
+    const p = r.payload;
+    if (r.jenis === 'pasang') {
+      m.set(normSeri(p['No Seri/Kode Ban']), { seri: normSeri(p['No Seri/Kode Ban']), unit: p['ID Unit'], posisi: p['Posisi Ban'],
+        merek: p['Merek Ban'], tipe: p['Tipe Ban'], kmPasang: Number(p['KM Pasang']), tglPasang: p['Tanggal Pemasangan'] });
+    } else if (r.jenis === 'lepas') {
+      m.delete(normSeri(p['No Seri Pelepasan']));
+    } else if (r.jenis === 'ganti') {
+      m.delete(normSeri(p.lepas['No Seri Pelepasan']));
+      m.set(normSeri(p.pasang['No Seri/Kode Ban']), { seri: normSeri(p.pasang['No Seri/Kode Ban']), unit: p.pasang['ID Unit'], posisi: p.pasang['Posisi Ban'],
+        merek: p.pasang['Merek Ban'], tipe: p.pasang['Tipe Ban'], kmPasang: Number(p.pasang['KM Pasang']), tglPasang: p.pasang['Tanggal Pemasangan'] });
+    }
+  });
+  return m;
+}
+
+// ══════════════════════════════════════════════════════════
+// NAVIGASI
+// ══════════════════════════════════════════════════════════
+async function safeShowPage(name) {
+  if (currentPage === 'form' && formDirty && name !== 'form') {
+    const ok = await askConfirm({ icon: '⚠️', title: 'Batalkan input?', text: 'Data yang belum disimpan akan hilang.', okText: 'Ya, keluar', danger: true });
+    if (!ok) return;
+  }
+  showPage(name);
+}
+function showPage(name) {
+  currentPage = name;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  $('page-' + name).classList.add('active');
+  document.querySelectorAll('.bnav-item').forEach(b => b.classList.remove('active'));
+  const nav = $('nav-' + name); if (nav) nav.classList.add('active');
+  $('page-' + name).scrollTop = 0;
+  if (name === 'history') refreshHistory();
+  if (name === 'laporan') refreshLaporan(); // rentang tanggal yg sudah dipilih user tetap dipertahankan antar-buka halaman
+  if (name === 'home') updateStats();
+  if (name !== 'form') { formDirty = false; formPhotos = []; editingLocalId = null; }
+}
+function goHome() { showPage('home'); }
+async function askGoHome() {
+  if (!formDirty) return goHome();
+  const ok = await askConfirm({ icon: '⚠️', title: 'Batalkan input?', text: 'Data yang belum disimpan akan hilang.', okText: 'Ya, keluar', danger: true });
+  if (ok) goHome();
+}
+
+// ══════════════════════════════════════════════════════════
+// FORM
+// ══════════════════════════════════════════════════════════
+const allFields = cfg => cfg.sections.flatMap(s => s.fields);
+const fieldEl = col => document.querySelector('[data-col="' + CSS.escape(col) + '"]');
+
+function handleSelectLainnya(id) {
+  const sel = document.getElementById(id + '_sel');
+  const txt = document.getElementById(id);
+  if (!sel || !txt) return;
+  if (sel.value === '__lainnya__') {
+    txt.style.display = '';
+    txt.value = '';
+    txt.focus();
+  } else {
+    txt.style.display = 'none';
+    txt.value = sel.value;
+  }
+  // supaya listener yang nempel di data-col (mis. updatePhotoHint utk "Jenis Kerusakan")
+  // tetap kepicu meski nilainya diisi lewat dropdown, bukan diketik manual.
+  txt.dispatchEvent(new Event('change', { bubbles: true }));
+}
+const handleTipeBanSelect = handleSelectLainnya; // alias lama, dipakai onchange yang sudah ter-render
+
+// ── ID Unit: cari dari Master Data, tidak bisa nambah unit baru dari form ──
+// (dulu pakai <select> + "Lainnya (ketik manual)"; sekarang search-box supaya gampang dicari
+// di daftar panjang, tapi hasil akhirnya HARUS persis salah satu unit di Master Data.)
+function onUnitSearch(id) {
+  const input = document.getElementById(id), list = document.getElementById(id + '_list');
+  if (!input || !list) return;
+  const q = input.value.trim().toUpperCase();
+  const matches = (MASTER.units || []).filter(u => u.toUpperCase().includes(q)).slice(0, 200);
+  list.innerHTML = matches.length
+    ? matches.map(u => `<div class="combo-item" data-val="${esc(u)}">${esc(u)}</div>`).join('')
+    : `<div class="combo-empty">Unit tidak ditemukan di Master Data</div>`;
+  list.style.display = 'block';
+}
+function onUnitBlur(id) {
+  // delay dikit supaya klik/tap di item combo-list sempat kepilih dulu sebelum list ditutup
+  setTimeout(() => {
+    const input = document.getElementById(id), list = document.getElementById(id + '_list');
+    if (list) list.style.display = 'none';
+    if (!input) return;
+    const v = input.value.trim().toUpperCase();
+    if (v && !(MASTER.units || []).some(u => u.toUpperCase() === v)) {
+      input.value = '';
+      toast('⚠ ID Unit harus dipilih dari daftar Master Data', 'err');
+    }
+  }, 200);
+}
+document.addEventListener('mousedown', e => {
+  const item = e.target.closest('.combo-item'); if (!item) return;
+  const list = item.closest('.combo-list'); if (!list) return;
+  const input = document.getElementById(list.dataset.for); if (!input) return;
+  input.value = item.dataset.val;
+  list.style.display = 'none';
+  input.dispatchEvent(new Event('change', { bubbles: true }));
+});
+
+// ── Filter Kode Ban Luar / Merek Ban Dalam / Lidah Ban sesuai Tipe Ban terpilih ──
+// Cuma berlaku utk 2 tipe yg dikenal (12R24, 12R20): entri di Master Data yang jelas-jelas
+// menyebut ukuran LAIN disembunyikan; entri generik tanpa ukuran (mis. "Ban Luar REPAIR")
+// tetap selalu muncul karena bisa dipakai utk ukuran manapun. "Lainnya (ketik manual)" tetap
+// selalu ada sebagai jalan keluar kalau item yang dicari memang tersembunyi.
+// Lokasi Penanganan sekarang pilihan klik, bukan ketik manual tiap kali. "WS Motui" jadi
+// default terpilih otomatis saat form dibuka (lihat openForm). Tambah string baru di
+// array ini kalau ada lokasi lain yang sering dipakai.
+const LOKASI_PENANGANAN_OPTIONS = ['WS Motui'];
+
+const TIPE_BAN_TOKENS = ['12R24', '12R20'];
+const SIZE_FILTER_FIELDS = { 'Kode Ban Luar': 'kodeBanLuar', 'Merek Ban Dalam': 'banDalam', 'Lidah Ban': 'lidahBan' };
+function sizeTokenOf(str) {
+  const s = String(str || '').toUpperCase();
+  return TIPE_BAN_TOKENS.find(t => s.includes(t)) || null;
+}
+function onTipeBanChanged() {
+  const tipeEl = fieldEl('Tipe Ban') || fieldEl('Tipe Ban Lepas');
+  const tipe = (tipeEl ? tipeEl.value : '').trim().toUpperCase();
+  Object.keys(SIZE_FILTER_FIELDS).forEach(col => applySizeFilter(col, tipe));
+}
+function applySizeFilter(col, tipe) {
+  const input = fieldEl(col); if (!input) return; // field ini tidak dipakai di form yang sedang terbuka
+  const sel = document.getElementById(input.id + '_sel'); if (!sel) return;
+  const prevValue = sel.value;
+  const all = MASTER.lists[SIZE_FILTER_FIELDS[col]] || [];
+  const filtered = TIPE_BAN_TOKENS.includes(tipe)
+    ? all.filter(o => { const t = sizeTokenOf(o); return !t || t === tipe; })
+    : all; // Tipe Ban belum dipilih / bukan 12R24 atau 12R20 → tampilkan semua spt biasa
+  sel.innerHTML = `<option value="">-- Pilihan --</option>` +
+    filtered.map(o => `<option>${esc(o)}</option>`).join('') +
+    `<option value="__lainnya__">Lainnya (ketik manual)</option>`;
+  if (Array.from(sel.options).some(o => o.value === prevValue)) {
+    sel.value = prevValue; // pilihan lama masih valid (cocok tipe / generik / "Lainnya") — pertahankan
+  } else if (prevValue) {
+    // pilihan lama disembunyikan krn tidak sesuai Tipe Ban baru — reset supaya tidak nyangkut yang salah
+    sel.value = ''; input.value = ''; input.style.display = 'none';
+    toast(`⚠ ${col} direset — pilihan lama tidak sesuai Tipe Ban ${tipe}`, 'err');
+  }
+}
+
+function fieldHtml(f, i) {
+  const id = 'f_' + i, col = esc(f.col), lblText = esc(f.label || f.col);
+  const lbl = `<label for="${id}">${lblText}${f.req ? ' <span class="req">*</span>' : ''}</label>`;
+  let input = '';
+  switch (f.type) {
+    case 'lokasi':
+      input = `<select id="${id}_sel" onchange="handleSelectLainnya('${id}')"><option value="">-- Pilihan --</option>` +
+        LOKASI_PENANGANAN_OPTIONS.map(o => `<option>${esc(o)}</option>`).join('') +
+        `<option value="__lainnya__">Lainnya (ketik manual)</option></select>
+        <input id="${id}" data-col="${col}" type="text" autocomplete="off" style="display:none;margin-top:8px" placeholder="Ketik ${lblText}"/>`;
+      break;
+    case 'select':
+      input = `<select id="${id}_sel" onchange="handleSelectLainnya('${id}')"><option value="">-- Pilihan --</option>` +
+        (MASTER.lists[f.list] || []).map(o => `<option>${esc(o)}</option>`).join('') +
+        `<option value="__lainnya__">Lainnya (ketik manual)</option></select>
+        <input id="${id}" data-col="${col}" type="text" autocomplete="off" style="display:none;margin-top:8px" placeholder="Ketik ${lblText}"/>`;
+      break;
+    case 'number': input = `<input id="${id}" data-col="${col}" type="number" inputmode="decimal" min="0" step="any"/>`; break;
+    case 'date':   input = `<input id="${id}" data-col="${col}" type="date"/>`; break;
+    case 'time':   input = `<input id="${id}" data-col="${col}" type="time"/>`; break;
+    case 'unit':
+      input = `<div class="combo-wrap">
+        <input id="${id}" data-col="${col}" type="text" class="upper" autocomplete="off" autocapitalize="characters"
+          placeholder="Cari ID Unit..." oninput="onUnitSearch('${id}')" onfocus="onUnitSearch('${id}')" onblur="onUnitBlur('${id}')"/>
+        <div class="combo-list" id="${id}_list" data-for="${id}"></div>
+      </div>`;
+      break;
+    case 'seri':
+      input = `<select id="${id}_sel" onchange="handleSelectLainnya('${id}')"><option value="">-- Pilihan --</option>` +
+        (MASTER.lists[f.list] || []).map(o => `<option>${esc(o)}</option>`).join('') +
+        `<option value="__lainnya__">Lainnya (ketik manual)</option></select>
+        <input id="${id}" data-col="${col}" type="text" class="upper" autocomplete="off" autocapitalize="characters" style="display:none;margin-top:8px" placeholder="Ketik ${lblText}"/>`;
+      break;
+    case 'tekanan':
+      input = `<select id="${id}_sel" onchange="handleSelectLainnya('${id}')"><option value="">-- Pilihan --</option>` +
+        (MASTER.lists[f.list] || []).map(o => { const n = String(o).match(/-?\d+(\.\d+)?/); return `<option value="${esc(n ? n[0] : o)}">${esc(o)}</option>`; }).join('') +
+        `<option value="__lainnya__">Lainnya (ketik manual)</option></select>
+        <input id="${id}" data-col="${col}" type="number" inputmode="decimal" min="0" step="any" autocomplete="off" style="display:none;margin-top:8px" placeholder="Ketik ${lblText}"/>`;
+      break;
+    case 'tipeban':
+      input = `<select id="${id}_sel" onchange="handleSelectLainnya('${id}'); onTipeBanChanged()">
+          <option value="">-- Pilihan --</option>
+          <option value="12R24">12R24</option>
+          <option value="12R20">12R20</option>
+          <option value="__lainnya__">Lainnya (ketik manual)</option>
+        </select>
+        <input id="${id}" data-col="${col}" type="text" autocomplete="off" style="display:none;margin-top:8px" placeholder="Ketik tipe ban" oninput="onTipeBanChanged()"/>`;
+      break;
+    case 'geser':
+      input = `<select id="${id}_sel" onchange="handleSelectLainnya('${id}')"><option value="">-- Tidak ada (posisi ini kosong) --</option>` +
+        (MASTER.lists.posisi || []).map(o => `<option value="${esc(o)}">${esc(o)}</option>`).join('') + `</select>
+        <input id="${id}" data-col="${col}" type="text" style="display:none" tabindex="-1"/>
+        <div id="geserInfo" class="info-box" style="display:none;margin:8px 0 0"></div>`;
+      break;
+    case 'nama':
+      return ''; // Nama Penginput diambil otomatis dari Pengaturan, tidak ditampilkan di form.
+    case 'file':
+      return `<div class="form-field"><label>${col}</label>
+        <label class="photo-add" for="f_file">📷 Ambil / pilih foto</label>
+        <input type="file" id="f_file" accept="image/*" multiple hidden/>
+        <div class="photo-grid" id="photoGrid"></div>
+        <div class="hint" id="photoHint"></div></div>`;
+    default: input = f.upper
+        ? `<input id="${id}" data-col="${col}" type="text" class="upper" autocomplete="off" autocapitalize="characters"/>`
+        : `<input id="${id}" data-col="${col}" type="text" autocomplete="off"/>`;
+  }
+  return `<div class="form-field">${lbl}${input}${f.hint ? `<div class="hint">${esc(f.hint)}</div>` : ''}</div>` +
+    (f.lookup ? `<div id="lookupBox"></div>` : '');
+}
+
+function openForm(type, editRecord) {
+  if (!settings.nama) {
+    toast('⚠ Pilih Nama Penginput dulu di Pengaturan', 'err');
+    safeShowPage('settings');
+    return;
+  }
+  currentForm = type; formDirty = false;
+  editingLocalId = editRecord ? editRecord.localId : null;
+  editingStatus = editRecord ? editRecord.status : null;
+  formPhotos = editRecord ? (editRecord.payload.fotos || []).slice() : [];
+  const cfg = FORMS[type];
+  $('formTitle').textContent = (editRecord ? 'Edit ' : '') + cfg.title;
+  $('formSubtitle').textContent = editRecord ? 'Perbaiki data yang salah, lalu simpan ulang' : cfg.sub;
+  const pill = $('modePill'); pill.textContent = type === 'pasang' ? 'PASANG' : type === 'lepas' ? 'LEPAS' : 'GANTI'; pill.className = 'mode-pill ' + type;
+
+  let i = 0;
+  $('formBody').innerHTML = cfg.sections.map(sec =>
+    `<div class="form-section"><div class="section-label${sec.icon ? ' pill' : ''}">${sec.icon ? `<span>${sec.icon}</span> ` : ''}${esc(sec.label)}</div>${sec.fields.map(f => fieldHtml(f, i++)).join('')}</div>`
+  ).join('') + `<button class="submit-btn" id="submitBtn" onclick="${type === 'ganti' ? 'submitGantiForm()' : 'submitForm()'}">💾 ${editRecord ? 'Simpan Perubahan' : 'Simpan ' + esc(cfg.title)}</button>`;
+
+  // nilai awal
+  allFields(cfg).forEach(f => {
+    const el = f.type === 'file' ? null : fieldEl(f.col); if (!el) return;
+    if (f.type === 'date') el.value = todayIso();
+    if (f.autofill === 'nama') el.value = settings.nama || '';
+    if (f.type === 'lokasi') {
+      el.value = LOKASI_PENANGANAN_OPTIONS[0];
+      const sel = document.getElementById(el.id + '_sel');
+      if (sel) sel.value = LOKASI_PENANGANAN_OPTIONS[0];
+    }
+  });
+  document.querySelectorAll('input.upper').forEach(el => el.addEventListener('input', () => {
+    const s = el.selectionStart; el.value = el.value.toUpperCase(); try { el.setSelectionRange(s, s); } catch (e) {}
+  }));
+
+  if (editRecord) prefillFormFromRecord(type, editRecord);
+
+  $('formBody').addEventListener('input', () => { formDirty = true; }, { once: true });
+
+  const seri = document.querySelector('[data-col="No Seri Pelepasan"]');
+  if (seri) seri.addEventListener('change', () => doLookup(seri.value));
+  if (type === 'lepas' || type === 'ganti') {
+    const rusak = fieldEl('Jenis Kerusakan');
+    rusak.addEventListener('change', updatePhotoHint); updatePhotoHint();
+    $('f_file').addEventListener('change', onPickPhotos);
+  }
+  if (editRecord && $('photoGrid')) renderPhotos(); // photoGrid hanya ada di form Lepas/Ganti; tanpa cek ini Edit data Pemasangan error & form tidak terbuka
+  onTipeBanChanged(); // terapkan filter Kode Ban Luar/Ban Dalam/Lidah Ban sesuai Tipe Ban (kosong = semua tampil)
+  if (type === 'pasang') {
+    ['ID Unit', 'Posisi Ban'].forEach(col => { const el = fieldEl(col); if (el) el.addEventListener('change', refreshGeserInfo); });
+    refreshGeserInfo();
+  }
+  showPage('form');
+  $('page-form').scrollTop = 0;
+}
+
+// Ambil nilai lama utk 1 field form Ganti dari payload {lepas,pasang} lewat GANTI_MAP,
+// karena payload ganti disimpan terpecah per sisi (lepas/pasang), bukan flat spt form-nya.
+function gantiFieldValue(col, payload) {
+  const pKey = GANTI_MAP.pasang[col], lKey = GANTI_MAP.lepas[col];
+  if (pKey && payload.pasang && payload.pasang[pKey] !== undefined && payload.pasang[pKey] !== '') return payload.pasang[pKey];
+  if (lKey && payload.lepas && payload.lepas[lKey] !== undefined) return payload.lepas[lKey];
+  return '';
+}
+
+// Isi ulang form (input teks + dropdown terkait) dengan data record yang sedang diedit.
+function prefillFormFromRecord(type, editRecord) {
+  const cfg = FORMS[type], p = editRecord.payload;
+  allFields(cfg).forEach(f => {
+    if (f.type === 'file' || f.type === 'nama') return;
+    const el = fieldEl(f.col); if (!el) return;
+    let v = type === 'ganti' ? gantiFieldValue(f.col, p) : p[f.col];
+    if (v == null) v = '';
+    el.value = String(v);
+    const sel = document.getElementById(el.id + '_sel');
+    if (sel) {
+      if (v !== '' && Array.from(sel.options).some(o => o.value === String(v))) { sel.value = String(v); el.style.display = 'none'; }
+      else if (v !== '') { sel.value = '__lainnya__'; el.style.display = ''; }
+    }
+  });
+}
+
+async function doLookup(raw) {
+  return; // Autofill dari status ban aktif dinonaktifkan: logika status dipindah ke sheet History Ban.
+  const box = $('lookupBox'); if (!box) return;
+  const seri = normSeri(raw); box.innerHTML = '';
+  if (!seri) return;
+  const a = (await activeMap()).get(seri);
+  if (!a) {
+    box.innerHTML = `<div class="info-box warn">Tidak ada catatan pemasangan aktif untuk seri ini. Tetap bisa disimpan, isi manual. Umur pakai ban ini tidak bisa dihitung.</div>`;
+    return;
+  }
+  box.innerHTML = `<div class="info-box ok">Terpasang di <b>${esc(a.unit)}</b>, posisi ${esc(a.posisi)}, ${esc(a.merek)} ${esc(a.tipe)}. KM pasang ${esc(a.kmPasang)}, sejak ${esc(isoToId(a.tglPasang))}.</div>`;
+  Object.keys(LOOKUP_FILL).forEach(col => {
+    const el = fieldEl(col), v = a[LOOKUP_FILL[col]];
+    if (!el || el.value || v == null || v === '') return;
+    el.value = String(v);
+    const sel = document.getElementById(el.id + '_sel'); // field bertipe select/tipeban: sinkronkan dropdown-nya juga
+    if (sel) {
+      const cocok = Array.from(sel.options).some(o => o.value === String(v));
+      if (cocok) { sel.value = String(v); el.style.display = 'none'; }
+      else { sel.value = '__lainnya__'; el.style.display = ''; }
+    }
+  });
+}
+
+function updatePhotoHint() {
+  const rusak = fieldEl('Jenis Kerusakan'); if (!rusak) return;
+  $('photoHint').textContent = `Maksimal ${MASTER.maxFoto} foto. Foto tidak wajib.`;
+}
+
+function compress(file, maxDim = 1280, quality = 0.7) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => {
+      const s = Math.min(1, maxDim / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      resolve(c.toDataURL('image/jpeg', quality).split(',')[1]);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Foto tidak bisa dibaca')); };
+    img.src = url;
+  });
+}
+async function onPickPhotos(e) {
+  const files = Array.from(e.target.files || []);
+  e.target.value = '';
+  for (const f of files) {
+    if (formPhotos.length >= MASTER.maxFoto) { toast(`⚠ Maksimal ${MASTER.maxFoto} foto`, 'err'); break; }
+    try { formPhotos.push(await compress(f)); formDirty = true; } catch (err) { toast('⚠ ' + err.message, 'err'); }
+  }
+  renderPhotos();
+}
+function renderPhotos() {
+  $('photoGrid').innerHTML = formPhotos.map((b, i) =>
+    `<div class="photo-thumb"><img src="data:image/jpeg;base64,${b}" alt="Foto ${i + 1}"/><button type="button" onclick="removePhoto(${i})" aria-label="Hapus foto">✕</button></div>`).join('');
+}
+function removePhoto(i) { formPhotos.splice(i, 1); renderPhotos(); }
+
+function focusInvalid(el) {
+  if (!el) return;
+  // Field select disimpan di input tersembunyi (data-col); kalau lagi tersembunyi,
+  // sorot dropdown-nya (id + '_sel') yang tampak di layar, bukan input yang display:none.
+  if (el.style && el.style.display === 'none') {
+    const sel = document.getElementById(el.id + '_sel');
+    if (sel) el = sel;
+  }
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  el.style.boxShadow = '0 0 0 2px var(--nok)'; el.style.borderColor = 'var(--nok)';
+  setTimeout(() => { el.style.boxShadow = ''; el.style.borderColor = ''; }, 2000);
+}
+
+// ── Geser Ban Lama (form Pemasangan) ──────────────────────────────────────────
+// Di lapangan ban sering berpindah posisi (ban 8 meledak → ban 7 pindah ke 8 → ban baru masuk 7).
+// Kalau posisi yang dipasang masih terisi ban lama, operator memilih posisi tujuan ban lama di sini;
+// server memindahkan baris History-nya (bukan menutupnya) lalu mencatat pemasangan baru. Keputusan
+// diambil SAAT INPUT (bukan oleh server saat sync) karena penolakan saat sync baru terlihat belakangan.
+const _aktifCache = new Map(); // unit -> { at, data }
+let _geserReq = 0;
+async function fetchAktifUnit(unit) {
+  const c = _aktifCache.get(unit);
+  if (c && Date.now() - c.at < 30000) return c.data;
+  if (!HAS_GAS || !navigator.onLine) return null;
+  try {
+    const ctrl = new AbortController(), tid = setTimeout(() => ctrl.abort(), 8000);
+    const res = await fetch(GAS_URL + '?action=getAktif&unit=' + encodeURIComponent(unit), { method: 'GET', redirect: 'follow', signal: ctrl.signal });
+    clearTimeout(tid);
+    const json = JSON.parse(await res.text());
+    if (json.status === 'ok') { _aktifCache.set(unit, { at: Date.now(), data: json }); return json; }
+  } catch (e) { /* offline / lambat: form tetap bisa dipakai manual */ }
+  return null;
+}
+// Data server belum mencerminkan transaksi yang masih antre di HP ini (pending/error) — terapkan dulu
+// urutannya supaya saran "posisi baru dilepas" & status terisi/kosong ikut yang barusan diinput.
+async function overlayLocalPending(unit, server) {
+  const aktif = new Map((server.aktif || []).map(a => [String(a.posisi), a]));
+  const lepas = new Set((server.lepasHariIni || []).map(String));
+  const recs = (await dbGetAll('records'))
+    .filter(r => (r.status === 'pending' || r.status === 'error') && r.localId !== editingLocalId)
+    .sort((a, b) => (a.updatedAt || a.createdAt) < (b.updatedAt || b.createdAt) ? -1 : 1);
+  const doLepas = pos => { aktif.delete(pos); lepas.add(pos); };
+  const doPasang = (pos, geser, seri, tgl) => {
+    const lama = aktif.get(pos);
+    if (lama && geser) aktif.set(geser, lama);
+    aktif.set(pos, { posisi: pos, seri: seri || '', tanggal: tgl || '' });
+  };
+  recs.forEach(r => {
+    const p = r.payload;
+    if (r.jenis === 'lepas' && normSeri(p['ID Unit Pelepasan']) === unit) doLepas(String(p['Posisi Ban Pelepasan']));
+    else if (r.jenis === 'pasang' && normSeri(p['ID Unit']) === unit)
+      doPasang(String(p['Posisi Ban']), String(p['Geser Ban Lama Ke'] || ''), p['No Seri/Kode Ban'], p['Tanggal Pemasangan']);
+    else if (r.jenis === 'ganti' && normSeri(p.lepas['ID Unit Pelepasan']) === unit) {
+      doLepas(String(p.lepas['Posisi Ban Pelepasan']));
+      doPasang(String(p.pasang['Posisi Ban']), '', p.pasang['No Seri/Kode Ban'], p.pasang['Tanggal Pemasangan']);
+    }
+  });
+  return { aktif, lepas };
+}
+async function refreshGeserInfo() {
+  // Edit record yang SUDAH tersinkron: barisnya sendiri sudah Aktif di server, jadi "posisi terisi" akan menunjuk dirinya sendiri.
+  // Edit record Ditolak/Pending/Gagal (kasus umum: ditolak karena posisi masih Aktif) tetap dapat saran + daftar posisi terisi.
+  if (editingLocalId != null && editingStatus === 'synced') return;
+  const inp = fieldEl('Geser Ban Lama Ke'), box = $('geserInfo');
+  if (!inp || !box) return;
+  const sel = document.getElementById(inp.id + '_sel');
+  const unitEl = fieldEl('ID Unit'), posEl = fieldEl('Posisi Ban');
+  const unit = normSeri(unitEl ? unitEl.value : ''), posisi = (posEl ? posEl.value : '').trim();
+  const req = ++_geserReq;
+  const setBox = (html, cls) => { box.className = 'info-box ' + (cls || ''); box.innerHTML = html; box.style.display = html ? '' : 'none'; };
+  if (!unit || !posisi) { setBox(''); return; }
+
+  const server = await fetchAktifUnit(unit);
+  if (req !== _geserReq || !document.body.contains(box)) return; // pilihan berubah lagi / form sudah ditutup
+  if (!server) {
+    setBox('📴 Status posisi tidak bisa dicek sekarang. Kalau di posisi ' + esc(posisi) + ' masih ada ban lama yang dipindah, pilih posisi tujuannya di atas.', 'warn');
+    return;
+  }
+  const st = await overlayLocalPending(unit, server);
+  if (req !== _geserReq || !document.body.contains(box)) return;
+
+  const prev = sel.value;
+  sel.innerHTML = `<option value="">-- Tidak ada (posisi ini kosong) --</option>` +
+    (MASTER.lists.posisi || []).filter(o => String(o) !== posisi).map(o => {
+      const terisi = st.aktif.has(String(o)), baru = st.lepas.has(String(o)) && !terisi;
+      return `<option value="${esc(o)}"${terisi ? ' disabled' : ''}>${esc(o)}${terisi ? ' (terisi)' : baru ? ' (baru dilepas hari ini)' : ''}</option>`;
+    }).join('');
+  sel.value = Array.from(sel.options).some(o => o.value === prev && !o.disabled) ? prev : '';
+  inp.value = sel.value;
+
+  if (st.aktif.has(posisi)) {
+    const a = st.aktif.get(posisi);
+    const kandidat = [...st.lepas].filter(p => !st.aktif.has(p) && p !== posisi);
+    if (!sel.value && kandidat.length === 1) { sel.value = kandidat[0]; inp.value = kandidat[0]; }
+    setBox(`⚠ Posisi <b>${esc(posisi)}</b> masih terisi ban lama${a.tanggal ? ' (dipasang ' + esc(isoToId(a.tanggal)) + ')' : ''}. ` +
+      (sel.value ? `Ban lama akan <b>dipindah ke posisi ${esc(sel.value)}</b> — ganti pilihan di atas kalau salah. ` : 'Pilih posisi tujuan ban lama di atas. ') +
+      'Kalau ban lama itu sebenarnya dilepas, batalkan dan catat lewat menu Pelepasan / Ganti Ban.', 'warn');
+  } else {
+    sel.value = ''; inp.value = ''; // posisi kosong: pilihan geser tidak relevan, jangan ikut terkirim
+    setBox(`✔ Posisi <b>${esc(posisi)}</b> kosong — tidak perlu geser.`, 'ok');
+  }
+}
+
+// Client ID beda tiap tap Simpan, jadi anti-dobel di GAS (per Client ID) tidak bisa
+// nangkep ini — operator yang nge-tap ulang form yang sama menghasilkan transaksi
+// baru yang sah secara ID walau isinya identik. Makanya diblokir TOTAL di sini,
+// tanpa opsi lanjut (confirm() lama bisa di-skip) — kalau memang perlu dikoreksi,
+// pakai Edit dari Riwayat, jangan input baru.
+const DUPLICATE_WINDOW_MS = 3 * 60 * 1000; // 3 menit
+
+async function cegahDobelInput(jenis, unit, posisi, seri) {
+  const recs = await dbGetAll('records');
+  const now = Date.now();
+  const dup = recs.find(r => r.jenis === jenis && r.unit === unit && r.posisi === posisi && r.seri === seri
+    && r.status !== 'rejected'
+    && (now - new Date(r.createdAt).getTime()) < DUPLICATE_WINDOW_MS);
+  if (!dup) return true;
+  const menit = Math.max(1, Math.round((now - new Date(dup.createdAt).getTime()) / 60000));
+  toast(`⛔ Unit ${unit} posisi ${posisi} baru saja diinput ${menit} menit lalu. Kalau itu salah, buka Riwayat → Edit data itu, jangan input baru.`, 'err', 6000);
+  return false;
+}
+
+async function submitForm() {
+  if (_submitting) return; // sudah ada proses simpan berjalan, abaikan tap kedua
+  _submitting = true;
+  try {
+  const cfg = FORMS[currentForm], data = {};
+  for (const f of allFields(cfg)) {
+    if (f.type === 'file') continue;
+    if (f.type === 'nama') {
+      data[f.col] = settings.nama || '';
+      if (f.req && !data[f.col]) { toast('⚠ Nama penginput belum diatur. Buka Pengaturan dulu.', 'err'); safeShowPage('settings'); return; }
+      continue;
+    }
+    const el = fieldEl(f.col);
+    let v = (el.value || '').trim();
+    if (f.type === 'unit' || f.type === 'seri') v = normSeri(v);
+    data[f.col] = v;
+    if (f.req && !v) { toast(`⚠ ${f.col} wajib diisi`, 'err'); focusInvalid(el); return; }
+    if ((f.type === 'number' || f.type === 'tekanan') && v !== '' && !(Number(v) >= 0)) { toast(`⚠ ${f.col} harus angka positif`, 'err'); focusInvalid(el); return; }
+  }
+  const isLepas = currentForm === 'lepas';
+  const isEdit = editingLocalId != null;
+
+  const geserKe = currentForm === 'pasang' ? (data['Geser Ban Lama Ke'] || '') : '';
+  if (geserKe) {
+    if (geserKe === data['Posisi Ban']) { toast('⚠ Posisi tujuan geser tidak boleh sama dengan posisi pasang', 'err'); focusInvalid(fieldEl('Geser Ban Lama Ke')); return; }
+    if (!isEdit || editingStatus !== 'synced') {
+      const ok = await askConfirm({ icon: '🔁', title: 'Geser ban lama?',
+        text: `Ban lama di unit ${data['ID Unit']} posisi ${data['Posisi Ban']} akan DIPINDAH ke posisi ${geserKe} (bukan dilepas), lalu ban baru dipasang di posisi ${data['Posisi Ban']}.`,
+        okText: 'Ya, simpan' });
+      if (!ok) return;
+    }
+  }
+
+  // Penginputan = pencatatan murni. Tidak ada validasi terhadap data lain (KM, unit, status ban).
+  const seri = isLepas ? data['No Seri Pelepasan'] : data['No Seri/Kode Ban'];
+  const unit = data[isLepas ? 'ID Unit Pelepasan' : 'ID Unit'];
+  const posisi = data[isLepas ? 'Posisi Ban Pelepasan' : 'Posisi Ban'];
+  if (!isEdit && !(await cegahDobelInput(currentForm, unit, posisi, seri))) return;
+
+  let record;
+  if (isEdit) {
+    const existing = await dbGet('records', editingLocalId);
+    if (!existing) { toast('❌ Data yang diedit tidak ditemukan lagi', 'err'); return; }
+    record = {
+      ...existing,
+      jenis: currentForm, tanggal: data[isLepas ? 'Tanggal Pelepasan' : 'Tanggal Pemasangan'],
+      unit, seri, posisi,
+      status: 'pending', errorMsg: '', retryCount: 0, nextRetryAt: null, updatedAt: new Date().toISOString(),
+      // Client ID TETAP sama spt sebelumnya — supaya (setelah Code.gs mendukung upsert) baris lama
+      // di Sheets yang di-update, bukan baris baru yang ditambahkan.
+      payload: { 'Client ID': existing.clientId, 'Jenis': cfg.jenis, ...data, fotos: isLepas ? formPhotos.slice() : [] }
+    };
+  } else {
+    const clientId = uuid();
+    record = {
+      jenis: currentForm, tanggal: data[isLepas ? 'Tanggal Pelepasan' : 'Tanggal Pemasangan'],
+      unit, seri, posisi,
+      status: 'pending', createdAt: new Date().toISOString(), clientId,
+      // Dikirim apa adanya ke server (juga dibaca Service Worker untuk Background Sync)
+      payload: { 'Client ID': clientId, 'Jenis': cfg.jenis, ...data, fotos: isLepas ? formPhotos.slice() : [] }
+    };
+  }
+
+  const btn = $('submitBtn'); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Menyimpan...';
+  try {
+    const localId = await dbPut('records', record);
+    toast(navigator.onLine ? (isEdit ? '✅ Perubahan tersimpan, mengirim ke server...' : '✅ Tersimpan, mengirim ke server...') : '📴 Tersimpan di HP. Sync otomatis saat ada sinyal.', 'ok', navigator.onLine ? 3000 : 5000);
+    formDirty = false; editingLocalId = null; goHome(); updateSyncBadge();
+    // Jangan daftarkan Background Sync (SW) kalau online — foreground syncAll sudah menangani,
+    // dua jalur sekaligus = race, bisa kirim record 'pending' yang sama 2x ke GAS (dobel baris).
+    // Target hanya record ini (onlyId) biar toast hasil sync nyambung ke input barusan, bukan seluruh antrean.
+    if (navigator.onLine && HAS_GAS) { syncAll(true, true, localId, true); } else { requestBackgroundSync(); }
+  } catch (e) {
+    toast('❌ Gagal simpan: ' + e.message, 'err');
+    btn.disabled = false; btn.innerHTML = `💾 ${isEdit ? 'Simpan Perubahan' : 'Simpan ' + esc(cfg.title)}`;
+  }
+  } finally { _submitting = false; }
+}
+
+async function submitGantiForm() {
+  if (_submitting) return; // sudah ada proses simpan berjalan, abaikan tap kedua
+  _submitting = true;
+  try {
+  const cfg = FORMS.ganti, data = {};
+  for (const f of allFields(cfg)) {
+    if (f.type === 'file') continue;
+    if (f.type === 'nama') {
+      data[f.col] = settings.nama || '';
+      if (f.req && !data[f.col]) { toast('⚠ Nama penginput belum diatur. Buka Pengaturan dulu.', 'err'); safeShowPage('settings'); return; }
+      continue;
+    }
+    const el = fieldEl(f.col);
+    let v = (el.value || '').trim();
+    if (f.type === 'unit' || f.type === 'seri') v = normSeri(v);
+    data[f.col] = v;
+    if (f.req && !v) { toast(`⚠ ${f.col} wajib diisi`, 'err'); focusInvalid(el); return; }
+    if ((f.type === 'number' || f.type === 'tekanan') && v !== '' && !(Number(v) >= 0)) { toast(`⚠ ${f.col} harus angka positif`, 'err'); focusInvalid(el); return; }
+  }
+  // Satu input KM untuk lepas & pasang: unit yang bannya dilepas pasti langsung dipasang
+  // ban baru di KM yang sama, jadi KM Pasang disamakan dengan KM Lepas.
+  data['KM Pasang'] = data['KM Lepas'];
+  // Satu input Tipe Ban untuk lepas & pasang: disalin ke kolom Tipe Ban Lepas
+  // supaya kedua baris di spreadsheet tetap terisi.
+  data['Tipe Ban Lepas'] = data['Tipe Ban'];
+  const seriLama = data['No Seri Pelepasan'], seriBaru = data['No Seri/Kode Ban'];
+  const unit = data['ID Unit'], posisi = data['Posisi Ban'], seri = seriLama + ' → ' + seriBaru;
+  const isEdit = editingLocalId != null;
+  if (!isEdit && !(await cegahDobelInput('ganti', unit, posisi, seri))) return;
+
+  const lepas = {}, pasang = {};
+  Object.keys(GANTI_MAP.lepas).forEach(k => { lepas[GANTI_MAP.lepas[k]] = data[k]; });
+  Object.keys(GANTI_MAP.pasang).forEach(k => { pasang[GANTI_MAP.pasang[k]] = data[k]; });
+
+  let record;
+  if (isEdit) {
+    const existing = await dbGet('records', editingLocalId);
+    if (!existing) { toast('❌ Data yang diedit tidak ditemukan lagi', 'err'); return; }
+    record = {
+      ...existing,
+      jenis: 'ganti', tanggal: data['Tanggal'], unit, posisi, seri,
+      status: 'pending', errorMsg: '', retryCount: 0, nextRetryAt: null, updatedAt: new Date().toISOString(),
+      // Client ID TETAP sama spt sebelumnya — supaya (setelah Code.gs mendukung upsert) baris lama
+      // di Sheets yang di-update, bukan baris baru yang ditambahkan.
+      payload: { 'Client ID': existing.clientId, 'Jenis': 'Penggantian Ban', lepas, pasang, fotos: formPhotos.slice() }
+    };
+  } else {
+    const clientId = uuid();
+    record = {
+      jenis: 'ganti', tanggal: data['Tanggal'], unit, posisi, seri,
+      status: 'pending', createdAt: new Date().toISOString(), clientId,
+      // Dikirim apa adanya ke server (juga dibaca Service Worker untuk Background Sync)
+      payload: { 'Client ID': clientId, 'Jenis': 'Penggantian Ban', lepas, pasang, fotos: formPhotos.slice() }
+    };
+  }
+
+  const btn = $('submitBtn'); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Menyimpan...';
+  try {
+    const localId = await dbPut('records', record);
+    toast(navigator.onLine ? (isEdit ? '✅ Perubahan tersimpan, mengirim ke server...' : '✅ Tersimpan, mengirim ke server...') : '📴 Tersimpan di HP. Sync otomatis saat ada sinyal.', 'ok', navigator.onLine ? 3000 : 5000);
+    formDirty = false; editingLocalId = null; goHome(); updateSyncBadge();
+    // Jangan daftarkan Background Sync (SW) kalau online — foreground syncAll sudah menangani,
+    // dua jalur sekaligus = race, bisa kirim record 'pending' yang sama 2x ke GAS (dobel baris).
+    // Target hanya record ini (onlyId) biar toast hasil sync nyambung ke input barusan, bukan seluruh antrean.
+    if (navigator.onLine && HAS_GAS) { syncAll(true, true, localId, true); } else { requestBackgroundSync(); }
+  } catch (e) {
+    toast('❌ Gagal simpan: ' + e.message, 'err');
+    btn.disabled = false; btn.innerHTML = `💾 ${isEdit ? 'Simpan Perubahan' : 'Simpan ' + esc(cfg.title)}`;
+  }
+  } finally { _submitting = false; }
+}
+
+// ══════════════════════════════════════════════════════════
+// SYNC
+// ══════════════════════════════════════════════════════════
+const RETRY_DELAYS_MS = [60000, 300000, 900000, 3600000];
+function shouldRetryRecord(rec) {
+  if (rec.status === 'pending') return true;
+  if (rec.status === 'error') {
+    if ((rec.retryCount || 0) >= RETRY_DELAYS_MS.length) return false;
+    return Date.now() >= (rec.nextRetryAt || 0);
+  }
+  return false; // synced / rejected
+}
+
+async function syncAll(manual, force, onlyId, quiet) {
+  if (!HAS_GAS) { toast('⚠ URL GAS belum diisi', 'err'); return; }
+  if (_isSyncing && !force) { toast('⏳ Sedang sync, harap tunggu...'); return; }
+  _isSyncing = true;
+  const btn = $('syncBtn');
+  const resetBtn = () => { btn.disabled = false; btn.innerHTML = '↑ Sync <span class="sync-badge" id="syncBadge" style="display:none">0</span>'; };
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Sync...';
+
+  // Urutan kirim per unit harus sama dengan urutan input di HP (lepas dulu, baru pasang/geser), karena server
+  // menolak geser ke posisi yang di server MASIH Aktif. Record yang baru diedit dihitung dari updatedAt-nya.
+  const recTime = r => r.updatedAt || r.createdAt || '';
+  const all = (await dbGetAll('records')).sort((a, b) => recTime(a) < recTime(b) ? -1 : 1);
+  const isOpen = r => r.status === 'pending' || r.status === 'error';
+  let toSync;
+  if (onlyId != null) {
+    // Kirim 1 record: ikutkan antrean lain unit yang sama (mis. Pelepasan posisi tujuan yang belum terkirim)
+    // SEBELUM record ini, kalau tidak, server melihat posisi tujuan masih Aktif dan menolak geser.
+    const t = all.find(r => r.localId === onlyId);
+    toSync = (t && isOpen(t)) ? all.filter(r => isOpen(r) && (r.localId === onlyId || r.unit === t.unit)) : [];
+    const ti = toSync.findIndex(r => r.localId === onlyId);
+    if (ti > -1) toSync.push(toSync.splice(ti, 1)[0]); // record target selalu terakhir
+  } else {
+    const base = manual ? all.filter(isOpen) : all.filter(shouldRetryRecord);
+    const inBase = new Set(base.map(r => r.localId));
+    const held = new Set(); // unit yang punya antrean lebih tua yang belum waktunya dicoba ulang
+    toSync = [];
+    all.forEach(r => {
+      if (!isOpen(r)) return;
+      if (inBase.has(r.localId)) { if (!held.has(r.unit)) toSync.push(r); }
+      else if (r.status === 'error' && (r.retryCount || 0) < RETRY_DELAYS_MS.length) held.add(r.unit);
+    });
+  }
+
+  if (!toSync.length) {
+    toast('✅ Semua data tersync', 'ok'); resetBtn(); updateSyncBadge(); _isSyncing = false; return;
+  }
+
+  let success = 0, failed = 0, rejected = 0;
+  const blockedUnits = new Set(); // unit yang record sebelumnya gagal kirim (jaringan/server) — sisanya tunggu
+  for (const rec of toSync) {
+    if (blockedUnits.has(rec.unit)) continue; // tetap pending, dicoba lagi berurutan
+    try {
+      // 60 detik (bukan 45): Apps Script Web App bisa "cold start" + antre LockService
+      // sebelum benar-benar mulai proses, apalagi di sinyal HP yang pas-pasan di site.
+      const ctrl = new AbortController(), tid = setTimeout(() => ctrl.abort(), 60000);
+      const res = await fetch(GAS_URL, {
+        method: 'POST', body: JSON.stringify({ action: 'submitBan', data: rec.payload }),
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow', signal: ctrl.signal
+      });
+      clearTimeout(tid);
+      let json; try { json = JSON.parse(await res.text()); } catch (e) { json = { status: 'error', message: 'Respons bukan JSON valid' }; }
+      if (json.status === 'ok') {
+        await dbUpdate('records', rec.localId, { status: 'synced', syncedAt: new Date().toISOString(), errorMsg: '', retryCount: 0, nextRetryAt: null });
+        success++;
+      } else if (json.code === 'VALIDASI') {
+        // Ditolak aturan data. Mengulang otomatis tidak akan mengubah hasil.
+        await dbUpdate('records', rec.localId, { status: 'rejected', errorMsg: json.message || 'Ditolak server' });
+        rejected++;
+      } else {
+        const retryCount = (rec.retryCount || 0) + 1;
+        await dbUpdate('records', rec.localId, { status: 'error', errorMsg: json.message || 'Respons tidak OK', retryCount,
+          nextRetryAt: Date.now() + RETRY_DELAYS_MS[Math.min(retryCount - 1, RETRY_DELAYS_MS.length - 1)] });
+        failed++; blockedUnits.add(rec.unit);
+      }
+    } catch (e) {
+      const retryCount = (rec.retryCount || 0) + 1;
+      await dbUpdate('records', rec.localId, { status: 'error', errorMsg: e.name === 'AbortError' ? 'Timeout (>60 detik)' : e.message, retryCount,
+        nextRetryAt: Date.now() + RETRY_DELAYS_MS[Math.min(retryCount - 1, RETRY_DELAYS_MS.length - 1)] });
+      failed++; blockedUnits.add(rec.unit);
+    }
+  }
+  resetBtn(); updateSyncBadge(); updateStats(); renderHistory();
+  if (!failed && !rejected) toast(`✅ ${success} data tersync ke Sheets`, 'ok');
+  else if (rejected && !failed) toast(`⚠ ${success} berhasil, ${rejected} ditolak server. Cek Riwayat.`, 'err', 4500);
+  // "quiet": ini percobaan sync otomatis sesaat setelah Simpan, bukan tap manual dari operator.
+  // Data SUDAH aman di HP terlepas hasil ini — auto-retry jalan terjadwal. Toast merah "gagal" di
+  // sini bikin operator panik seolah datanya hilang, padahal cuma belum sempat terkirim.
+  else if (quiet) toast('⏳ Tersimpan di HP. Server belum merespons, akan dicoba lagi otomatis.', 'ok', 4000);
+  else toast(`⚠ ${success} berhasil, ${failed} gagal (auto-retry aktif)`, 'err');
+  _isSyncing = false;
+  if (success) syncMaster(false);   // segarkan daftar ban terpasang
+}
+
+async function retrySingle(localId) {
+  await dbUpdate('records', localId, { status: 'pending', errorMsg: '', retryCount: 0, nextRetryAt: null });
+  closeDetail(); updateSyncBadge(); renderHistory();
+  syncAll(false, true, localId);
+}
+
+async function tryAutoSync() {
+  if (!HAS_GAS || !navigator.onLine || _isSyncing) return;
+  const recs = await dbGetAll('records');
+  if (!recs.some(shouldRetryRecord)) return;
+  if (!(await isGASReachable())) return;
+  await syncAll(false);
+}
+async function isGASReachable() {
+  try {
+    const ctrl = new AbortController(), tid = setTimeout(() => ctrl.abort(), 6000);
+    const r = await fetch(GAS_URL + '?action=ping', { method: 'GET', mode: 'no-cors', redirect: 'follow', signal: ctrl.signal });
+    clearTimeout(tid);
+    return r.type === 'opaque' || r.ok;
+  } catch { return false; }
+}
+function setupAutoSync() {
+  window.addEventListener('online', () => { updateOnlineStatus(); setTimeout(() => tryAutoSync(), 1500); });
+  window.addEventListener('offline', () => { updateOnlineStatus(); _lastOnlineState = false; });
+  setInterval(async () => {
+    const now = navigator.onLine;
+    if (now && !_lastOnlineState) { updateOnlineStatus(); setTimeout(() => tryAutoSync(), 1500); }
+    _lastOnlineState = now;
+    if (now) await tryAutoSync();
+  }, 15000);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') { updateOnlineStatus(); setTimeout(() => tryAutoSync(), 2000); }
+  });
+}
+function updateOnlineStatus() {
+  $('offlineBanner').classList.toggle('show', !navigator.onLine);
+  $('noGasBanner').classList.toggle('show', !HAS_GAS);
+  _lastOnlineState = navigator.onLine;
+}
+
+// ══════════════════════════════════════════════════════════
+// STATISTIK & RIWAYAT
+// ══════════════════════════════════════════════════════════
+async function updateSyncBadge() {
+  const recs = await dbGetAll('records');
+  const n = recs.filter(r => r.status === 'pending' || r.status === 'error').length;
+  const b = $('syncBadge'); if (b) { b.textContent = n; b.style.display = n ? '' : 'none'; }
+  const rj = recs.filter(r => r.status === 'rejected').length;
+  $('rejectBadge').textContent = rj; $('rejectBadge').style.display = rj ? 'flex' : 'none';
+}
+async function updateStats() {
+  const recs = await dbGetAll('records'), today = todayIso();
+  $('statToday').textContent = recs.filter(r => {
+    const d = new Date(r.createdAt); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}` === today;
+  }).length;
+  $('statPending').textContent = recs.filter(r => r.status === 'pending' || r.status === 'error').length;
+  updateSyncBadge();
+}
+
+const STATUS_LABEL = { synced: '✅ Terkirim', pending: '⏳ Pending', error: '⚠ Gagal, auto-retry', rejected: '⛔ Ditolak' };
+
+async function fetchRemoteHistory(date) {
+  const target = date || todayIso();
+  if (!HAS_GAS || !navigator.onLine) return;
+  try {
+    const ctrl = new AbortController(), tid = setTimeout(() => ctrl.abort(), 20000);
+    const res = await fetch(GAS_URL + '?action=getHistory&date=' + target, { method: 'GET', redirect: 'follow', signal: ctrl.signal });
+    clearTimeout(tid);
+    const json = JSON.parse(await res.text());
+    if (json.status === 'ok') { remoteRows = json.rows || []; remoteRowsDate = target; _remoteFetchedAt = new Date(); }
+  } catch (e) { /* diam-diam gagal — riwayat lokal tetap tampil apa adanya */ }
+}
+function handleTopRefresh() {
+  if (currentPage === 'history') refreshHistory(true);
+  else if (currentPage === 'laporan') refreshLaporan(true);
+  else syncMaster(true);
+}
+async function refreshHistory(manual) {
+  renderHistory(); // tampilkan yang ada dulu (cepat, offline-safe)
+  const b = $('masterRefreshBtn');
+  if (manual && b) b.classList.add('spinning');
+  await fetchRemoteHistory();
+  if (manual && b) b.classList.remove('spinning');
+  renderHistory();
+}
+
+// Riwayat di aplikasi HANYA untuk hari ini (semua HP). Riwayat lengkap/lama ada di Spreadsheet,
+// bukan tugas aplikasi ini — jadi tiap ganti hari, daftar ini otomatis kosong lagi di sini.
+async function renderHistory() {
+  const today = todayIso();
+  const all = (await dbGetAll('records')).filter(r => r.tanggal === today).sort((a, b) => a.createdAt < b.createdAt ? 1 : -1);
+
+  // Client ID transaksi yang SUDAH ada di HP ini (ganti = 2 baris di server, -L dan -P)
+  // supaya baris yang sama tidak tampil dobel (sekali dari lokal, sekali lagi dari server).
+  const localIds = new Set();
+  all.forEach(r => { if (r.jenis === 'ganti') { localIds.add(r.clientId + '-L'); localIds.add(r.clientId + '-P'); } else localIds.add(r.clientId); });
+
+  // Ganti Ban dari HP lain masuk sebagai 2 baris terpisah dari server (Client ID + '-L' dan '-P',
+  // lihat submitGanti_ di Code.gs). Gabungkan jadi 1 item "Ganti Ban" di Riwayat supaya tidak
+  // tampil dobel — sama seperti tampilan Ganti Ban yang diinput dari HP ini sendiri.
+  remoteGantiPairs = new Map(); // base clientId -> { lepas: rawRow, pasang: rawRow }, dipakai openRemoteDetail
+  const filteredRemote = (remoteRows || []).filter(rr => rr.tanggal === today && !localIds.has(rr.clientId));
+  const remoteSingles = [];
+  filteredRemote.forEach(rr => {
+    const cid = rr.clientId || '';
+    const isL = cid.length > 2 && cid.endsWith('-L'), isP = cid.length > 2 && cid.endsWith('-P');
+    if (!isL && !isP) { remoteSingles.push(rr); return; }
+    const base = cid.slice(0, -2);
+    const g = remoteGantiPairs.get(base) || {};
+    g[isL ? 'lepas' : 'pasang'] = rr;
+    remoteGantiPairs.set(base, g);
+  });
+  const remoteItems = [];
+  remoteSingles.forEach(rr => remoteItems.push({
+    localId: null, remote: true, clientId: rr.clientId,
+    jenis: JENIS_REMOTE_MAP[rr.jenis] || 'pasang',
+    unit: rr.unit, seri: rr.seri, tanggal: rr.tanggal, status: 'synced', nama: rr.nama
+  }));
+  remoteGantiPairs.forEach((g, base) => {
+    if (g.lepas && g.pasang) {
+      remoteItems.push({
+        localId: null, remote: true, clientId: base, jenisGanti: true, jenis: 'ganti',
+        unit: g.pasang.unit || g.lepas.unit,
+        seri: (g.lepas.seri || '?') + ' → ' + (g.pasang.seri || '?'),
+        tanggal: g.pasang.tanggal || g.lepas.tanggal,
+        status: 'synced', nama: g.pasang.nama || g.lepas.nama
+      });
+    } else {
+      // Pasangannya belum lengkap (mis. baru satu sisi kesinkron) — tampilkan apa adanya, jangan disembunyikan.
+      remoteGantiPairs.delete(base);
+      if (g.lepas) remoteItems.push({ localId: null, remote: true, clientId: g.lepas.clientId, jenis: 'lepas', unit: g.lepas.unit, seri: g.lepas.seri, tanggal: g.lepas.tanggal, status: 'synced', nama: g.lepas.nama });
+      if (g.pasang) remoteItems.push({ localId: null, remote: true, clientId: g.pasang.clientId, jenis: 'pasang', unit: g.pasang.unit, seri: g.pasang.seri, tanggal: g.pasang.tanggal, status: 'synced', nama: g.pasang.nama });
+    }
+  });
+
+  const combined = all.concat(remoteItems);
+  const list = combined.filter(r => currentFilter === 'all' ? true
+    : currentFilter === 'pending' ? (r.status === 'pending' || r.status === 'error') : r.status === currentFilter);
+  $('histCount').textContent = `${list.length} data hari ini` + (remoteItems.length ? ` (${remoteItems.length} dari HP lain)` : '');
+  if (!list.length) {
+    $('histList').innerHTML = `<div class="empty-state"><div class="icon">📭</div><p>Belum ada input hari ini${currentFilter === 'all' ? '' : ' untuk filter ini'}. Riwayat hari-hari sebelumnya ada di Spreadsheet.</p></div>`;
+    return;
+  }
+  $('histList').innerHTML = list.map(r => r.remote ? `
+    <div class="hist-item" onclick="openRemoteDetail('${esc(r.clientId)}')">
+      <div class="status-dot remote"></div>
+      <div class="hist-item-info">
+        <div class="unit">${esc(r.unit)}</div>
+        <div class="meta">${esc(r.seri)}${r.nama ? ' • ' + esc(r.nama) : ''}</div>
+        <span class="hist-status ${JENIS_CLASS[r.jenis]}">${JENIS_LABEL[r.jenis]}</span><span class="hist-status remote">🌐 HP lain</span>
+      </div>
+    </div>` : `
+    <div class="hist-item" onclick="openDetail(${r.localId})">
+      <div class="status-dot ${r.status}"></div>
+      <div class="hist-item-info">
+        <div class="unit">${esc(r.unit)}</div>
+        <div class="meta">${esc(r.seri)}</div>
+        <span class="hist-status ${JENIS_CLASS[r.jenis]}">${JENIS_LABEL[r.jenis]}</span><span class="hist-status ${r.status}">${STATUS_LABEL[r.status] || r.status}</span>
+      </div>
+    </div>`).join('');
+}
+function openRemoteDetail(clientId) {
+  const pair = remoteGantiPairs.get(clientId);
+  if (pair && pair.lepas && pair.pasang) {
+    $('detailTitle').textContent = 'Ganti Ban — ' + (pair.pasang.unit || pair.lepas.unit);
+    const rows = [
+      ['ID Unit', pair.pasang.unit || pair.lepas.unit],
+      ['Posisi Ban', pair.pasang.posisi || pair.lepas.posisi],
+      ['No Seri Lama', pair.lepas.seri], ['No Seri Baru', pair.pasang.seri],
+      ['Tanggal', isoToId(pair.pasang.tanggal || pair.lepas.tanggal)],
+      ['Nama Penginput', pair.pasang.nama || pair.lepas.nama]
+    ].filter(([, v]) => v);
+    $('detailBody').innerHTML = `
+      <div class="hist-status remote" style="margin:0 0 10px">🌐 Data dari HP lain (sudah masuk Sheets)</div>
+      <div class="modal-meta">${rows.map(([k, v]) => `<div class="modal-meta-item"><div class="lbl">${esc(k)}</div><div class="val">${esc(v)}</div></div>`).join('')}</div>
+      <div class="info-box" style="margin-top:10px">Detail lengkap & foto hanya tersimpan di HP yang menginput data ini. Yang tampil di sini ringkasan dari Google Sheets.</div>`;
+    $('detailModal').classList.add('show');
+    return;
+  }
+  const r = (remoteRows || []).find(x => x.clientId === clientId); if (!r) return;
+  const jenisKey = JENIS_REMOTE_MAP[r.jenis] || 'pasang';
+  $('detailTitle').textContent = JENIS_LABEL[jenisKey] + ' — ' + r.unit;
+  const rows = [['ID Unit', r.unit], ['Posisi Ban', r.posisi], ['No Seri/Kode Ban', r.seri], ['Tanggal', isoToId(r.tanggal)], ['Nama Penginput', r.nama]]
+    .filter(([, v]) => v);
+  $('detailBody').innerHTML = `
+    <div class="hist-status remote" style="margin:0 0 10px">🌐 Data dari HP lain (sudah masuk Sheets)</div>
+    <div class="modal-meta">${rows.map(([k, v]) => `<div class="modal-meta-item"><div class="lbl">${esc(k)}</div><div class="val">${esc(v)}</div></div>`).join('')}</div>
+    <div class="info-box" style="margin-top:10px">Detail lengkap & foto hanya tersimpan di HP yang menginput data ini. Yang tampil di sini ringkasan dari Google Sheets.</div>`;
+  $('detailModal').classList.add('show');
+}
+
+// ══════════════════════════════════════════════════════════
+// LAPORAN PEMAKAIAN HARI INI
+// ══════════════════════════════════════════════════════════
+let lapDateFrom = null, lapDateTo = null; // null berarti "belum diset" — resetLapDateRangeToToday() akan mengisinya
+let lapRemoteRows = [], lapRemoteRangeKey = null;
+
+function resetLapDateRangeToToday() {
+  lapDateFrom = lapDateTo = todayIso();
+  const fi = $('lapDateFromInput'), ti = $('lapDateToInput');
+  if (fi) fi.value = lapDateFrom;
+  if (ti) ti.value = lapDateTo;
+}
+function onLapFromChange() {
+  const v = $('lapDateFromInput').value;
+  if (!v) return;
+  lapDateFrom = v;
+  if (lapDateFrom > lapDateTo) { lapDateTo = lapDateFrom; $('lapDateToInput').value = lapDateTo; }
+  refreshLaporan(true);
+}
+function onLapToChange() {
+  const v = $('lapDateToInput').value;
+  if (!v) return;
+  lapDateTo = v;
+  if (lapDateTo < lapDateFrom) { lapDateFrom = lapDateTo; $('lapDateFromInput').value = lapDateFrom; }
+  refreshLaporan(true);
+}
+
+// Ambil histori server utk tiap tanggal dalam rentang lalu digabung, supaya laporan bisa
+// terakumulasi lintas hari (endpoint GAS "getHistory" cuma terima 1 tanggal per call).
+async function fetchRemoteHistoryRange(from, to) {
+  const rangeKey = from + '_' + to;
+  if (!HAS_GAS || !navigator.onLine) { lapRemoteRows = []; lapRemoteRangeKey = rangeKey; return; }
+  const dates = [];
+  let d = new Date(from + 'T00:00:00');
+  const end = new Date(to + 'T00:00:00');
+  while (d <= end) { dates.push(`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`); d.setDate(d.getDate() + 1); }
+  const results = await Promise.all(dates.map(async dt => {
+    try {
+      const ctrl = new AbortController(), tid = setTimeout(() => ctrl.abort(), 20000);
+      const res = await fetch(GAS_URL + '?action=getHistory&date=' + dt, { method: 'GET', redirect: 'follow', signal: ctrl.signal });
+      clearTimeout(tid);
+      const json = JSON.parse(await res.text());
+      return json.status === 'ok' ? (json.rows || []) : [];
+    } catch (e) { return []; }
+  }));
+  lapRemoteRows = results.flat();
+  lapRemoteRangeKey = rangeKey;
+  _remoteFetchedAt = new Date();
+}
+
+async function refreshLaporan(manual) {
+  if (!lapDateFrom || !lapDateTo) resetLapDateRangeToToday(); // default ke hari ini saat pertama kali dibuka
+  const from = lapDateFrom, to = lapDateTo, rangeKey = from + '_' + to;
+  const content = $('lapContent'), note = $('lapLoadingNote');
+  if (lapRemoteRangeKey === rangeKey) {
+    renderLaporan(); // sudah ada cache server utk rentang ini — tampilkan langsung, tidak perlu loading state
+  } else {
+    // belum ada data server utk rentang ini di cache: JANGAN render angka dulu (bakal keliru nampilin 0
+    // seolah itu final), tampilkan status memuat sampai fetch selesai.
+    if (content) content.classList.add('lap-loading');
+    if (note) note.style.display = '';
+  }
+  const b = $('masterRefreshBtn');
+  if (manual && b) b.classList.add('spinning');
+  await fetchRemoteHistoryRange(from, to);
+  if (manual && b) b.classList.remove('spinning');
+  if (lapDateFrom !== from || lapDateTo !== to) return; // rentang sudah diganti lagi sebelum fetch ini selesai — biarkan proses yang lebih baru yang render
+  if (content) content.classList.remove('lap-loading');
+  if (note) note.style.display = 'none';
+  renderLaporan();
+}
+const LAP_CAT_LABEL = { seri: 'No Seri/Kode Ban', kodeBanLuar: 'Kode Ban Luar', banDalam: 'Ban Dalam', lidah: 'Lidah Ban' };
+let lapGroupStore = {};
+let lapPemakaianList = []; // diisi ulang tiap renderLaporan() — daftar mentah semua Pemasangan Ban di rentang tanggal terpilih, dipakai showLapPemakaianTotal()
+
+document.addEventListener('click', e => {
+  const row = e.target.closest('.lap-row[data-cat]');
+  if (!row) return;
+  const entry = (lapGroupStore[row.dataset.cat] || [])[+row.dataset.idx];
+  if (entry) showLapDetail(row.dataset.cat, entry[0], entry[1]);
+});
+
+function showLapDetail(cat, key, items) {
+  const tallyUnit = {};
+  items.forEach(it => {
+    const label = (it.unit || 'Tidak diisi') + (it.posisi ? ' — Posisi ' + it.posisi : '');
+    tallyUnit[label] = (tallyUnit[label] || 0) + 1;
+  });
+  const rows = Object.entries(tallyUnit).sort((a, b) => b[1] - a[1]);
+  $('detailTitle').textContent = `${LAP_CAT_LABEL[cat] || cat}: ${key}`;
+  $('detailBody').innerHTML = `<div class="modal-meta">${rows.map(([u, c]) =>
+    `<div class="modal-meta-item"><div class="lbl">Unit</div><div class="val">${esc(u)}${c > 1 ? ' ×' + c : ''}</div></div>`).join('')}</div>`;
+  $('detailModal').classList.add('show');
+}
+
+// Klik kotak total "Pemakaian Ban" — rincian per unit dari SELURUH pemasangan di rentang
+// tanggal yang sedang dipilih (bukan per kategori seri/kode/dll seperti showLapDetail).
+function showLapPemakaianTotal() {
+  if (!lapPemakaianList.length) {
+    $('detailTitle').textContent = 'Pemakaian Ban';
+    $('detailBody').innerHTML = `<div class="empty-state"><div class="icon">📭</div><p>Belum ada pemasangan ban di rentang tanggal ini.</p></div>`;
+    $('detailModal').classList.add('show');
+    return;
+  }
+  const tallyUnit = {};
+  lapPemakaianList.forEach(it => {
+    const label = (it.unit || 'Tidak diisi') + (it.posisi ? ' — Posisi ' + it.posisi : '');
+    tallyUnit[label] = (tallyUnit[label] || 0) + 1;
+  });
+  const rows = Object.entries(tallyUnit).sort((a, b) => b[1] - a[1]);
+  $('detailTitle').textContent = `Pemakaian Ban: ${lapPemakaianList.length} total`;
+  $('detailBody').innerHTML = `<div class="modal-meta">${rows.map(([u, c]) =>
+    `<div class="modal-meta-item"><div class="lbl">Unit</div><div class="val">${esc(u)}${c > 1 ? ' ×' + c : ''}</div></div>`).join('')}</div>`;
+  $('detailModal').classList.add('show');
+}
+
+async function renderLaporan() {
+  const from = lapDateFrom || todayIso(), to = lapDateTo || from;
+  $('lapDate').textContent = from === to ? isoToId(from) : `${isoToId(from)} s/d ${isoToId(to)}`;
+  const inRange = t => t >= from && t <= to; // format ISO YYYY-MM-DD, aman dibandingkan sbg string
+  const localAll = (await dbGetAll('records')).filter(r => inRange(r.tanggal));
+  // Baris yang sudah 'synced' di HP ini sudah pasti ada di lapRemoteRows (server) —
+  // dihitung dari lokal LAGI di sini cuma bikin dobel. Yang masih pending/error/rejected
+  // saja yang perlu ditambahkan dari lokal, karena belum tentu sudah nyampe ke server.
+  const localUnsynced = localAll.filter(r => r.status !== 'synced');
+  const remoteInRange = (lapRemoteRows || []).filter(rr => inRange(rr.tanggal));
+
+  // Satukan jadi 2 daftar event mentah: pemasangan & pelepasan, dari lokal (blm sync) + server (semua HP)
+  const pemasangan = [], pelepasan = [];
+  localUnsynced.forEach(r => {
+    if (r.jenis === 'pasang') pemasangan.push({ seri: r.payload['No Seri/Kode Ban'] || '', kodeBanLuar: r.payload['Kode Ban Luar'] || '', banDalam: r.payload['Merek Ban Dalam'] || '', lidah: r.payload['Lidah Ban'] || '', unit: r.unit || '', posisi: r.posisi || '' });
+    else if (r.jenis === 'lepas') pelepasan.push({});
+    else if (r.jenis === 'ganti') {
+      const p = r.payload.pasang || {};
+      pemasangan.push({ seri: p['No Seri/Kode Ban'] || '', kodeBanLuar: p['Kode Ban Luar'] || '', banDalam: p['Merek Ban Dalam'] || '', lidah: p['Lidah Ban'] || '', unit: r.unit || '', posisi: r.posisi || '' });
+      pelepasan.push({});
+    }
+  });
+  // Hanya baris "Pemasangan Ban" yang dihitung sebagai pemakaian — "Pelepasan Ban" cuma
+  // pasangan/log dari transaksi Ganti Ban yang sama, bukan pemakaian ban baru.
+  remoteInRange.forEach(rr => {
+    if (rr.jenis === 'Pemasangan Ban') pemasangan.push({ seri: rr.seri || '', kodeBanLuar: rr.kodeBanLuar || '', banDalam: rr.banDalam || '', lidah: rr.lidahBan || '', unit: rr.unit || '', posisi: rr.posisi || '' });
+    else if (rr.jenis === 'Pelepasan Ban') pelepasan.push({});
+  });
+
+  $('lapPemakaian').textContent = pemasangan.length;
+  lapPemakaianList = pemasangan;
+
+  const groupBy = (arr, pick) => {
+    const m = {};
+    arr.forEach(x => {
+      const k = (pick(x) || '').trim() || 'Tidak diisi';
+      (m[k] || (m[k] = [])).push({ unit: x.unit, posisi: x.posisi });
+    });
+    return Object.entries(m).sort((a, b) => b[1].length - a[1].length);
+  };
+  const renderList = (cat, rows) => {
+    lapGroupStore[cat] = rows;
+    return rows.length ? rows.map(([k, items], idx) =>
+      `<div class="lap-row" data-cat="${esc(cat)}" data-idx="${idx}"><span>${esc(k)}</span><span class="lap-count">${items.length}</span></div>`).join('')
+      : `<div class="lap-row"><span class="muted">Belum ada data hari ini</span></div>`;
+  };
+
+  $('lapSeriList').innerHTML = renderList('seri', groupBy(pemasangan, p => p.seri));
+  $('lapKodeBanLuarList').innerHTML = renderList('kodeBanLuar', groupBy(pemasangan, p => p.kodeBanLuar));
+  $('lapBanDalamList').innerHTML = renderList('banDalam', groupBy(pemasangan.filter(p => p.banDalam), p => p.banDalam));
+  $('lapLidahList').innerHTML = renderList('lidah', groupBy(pemasangan.filter(p => p.lidah), p => p.lidah));
+}
+
+// ── Salin ringkasan Laporan ke format teks siap-tempel WhatsApp ──
+function buildLaporanWaText() {
+  const dateLabel = $('lapDate').textContent;
+  const total = $('lapPemakaian').textContent;
+  let text = `📋 *Laporan Pemakaian Ban*\n📅 ${dateLabel}\n🔧 Total Pemakaian: ${total} ban\n`;
+  const seriGroups = lapGroupStore['seri'] || [];
+  if (seriGroups.length) {
+    text += `\n*Rincian per Kode:*\n`;
+    seriGroups.forEach(([key, items]) => {
+      const tallyUnit = {};
+      items.forEach(it => {
+        const label = (it.unit || 'Tidak diisi') + (it.posisi ? ' (No ' + it.posisi + ')' : '');
+        tallyUnit[label] = (tallyUnit[label] || 0) + 1;
+      });
+      const unitList = Object.entries(tallyUnit).map(([u, c]) => c > 1 ? `${u} ×${c}` : u).join(', ');
+      text += `• ${key}: ${items.length} — ${unitList}\n`;
+    });
+  }
+  return text;
+}
+async function copyLaporanToWA() {
+  const text = buildLaporanWaText();
+  try {
+    await navigator.clipboard.writeText(text);
+    toast('📋 Teks laporan disalin, tinggal tempel di WA', 'ok');
+  } catch (e) {
+    // fallback utk browser/webview lama tanpa Clipboard API
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try { document.execCommand('copy'); toast('📋 Teks laporan disalin, tinggal tempel di WA', 'ok'); }
+    catch (e2) { toast('❌ Gagal menyalin otomatis, coba salin manual', 'err'); }
+    document.body.removeChild(ta);
+  }
+}
+document.getElementById('histFilter').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  currentFilter = b.dataset.f;
+  document.querySelectorAll('#histFilter button').forEach(x => x.classList.toggle('active', x === b));
+  renderHistory();
+});
+
+async function openDetail(localId) {
+  const r = await dbGet('records', localId); if (!r) return;
+  const p = r.payload;
+  $('detailTitle').textContent = JENIS_LABEL[r.jenis] + ' — ' + r.unit;
+  const rowsFor = obj => Object.keys(obj).filter(k => obj[k] !== '').map(k =>
+    `<div class="modal-meta-item"><div class="lbl">${esc(FIELD_LABEL_OVERRIDE[k] || k)}</div><div class="val">${esc(DATE_COLS.includes(k) ? isoToId(obj[k]) : obj[k])}</div></div>`).join('');
+  let bodyMeta;
+  if (r.jenis === 'ganti') {
+    bodyMeta = `<div class="modal-section-lbl">Ban Lama (Dilepas)</div><div class="modal-meta">${rowsFor(p.lepas)}</div>
+      <div class="modal-section-lbl" style="margin-top:12px">Ban Baru (Dipasang)</div><div class="modal-meta">${rowsFor(p.pasang)}</div>`;
+  } else {
+    const skip = ['Client ID', 'Jenis', 'fotos'];
+    const flat = {}; Object.keys(p).filter(k => !skip.includes(k)).forEach(k => flat[k] = p[k]);
+    bodyMeta = `<div class="modal-meta">${rowsFor(flat)}</div>`;
+  }
+  const fotos = (p.fotos || []).map(b => `<div class="photo-thumb"><img src="data:image/jpeg;base64,${b}" alt="Foto"/></div>`).join('');
+  const canRetry = r.status !== 'synced';
+  $('detailBody').innerHTML = `
+    <div class="hist-status ${r.status}" style="margin:0 0 10px">${STATUS_LABEL[r.status]}</div>
+    ${r.errorMsg ? `<div class="info-box warn">${esc(r.errorMsg)}</div>` : ''}
+    ${bodyMeta}
+    ${fotos ? `<div class="modal-section-lbl">Foto</div><div class="photo-grid">${fotos}</div>` : ''}
+    <div><button class="retry-btn" onclick="openEditForm(${r.localId})">✏️ Edit data</button>
+    ${canRetry ? `<button class="retry-btn" onclick="retrySingle(${r.localId})">↑ Kirim ulang</button>` : ''}
+    ${canRetry ? `<button class="retry-btn danger" onclick="deleteRecord(${r.localId})">🗑 Hapus dari HP</button>` : ''}</div>`;
+  $('detailModal').classList.add('show');
+}
+function closeDetail() { $('detailModal').classList.remove('show'); }
+async function openEditForm(localId) {
+  const r = await dbGet('records', localId);
+  if (!r) { toast('❌ Data tidak ditemukan', 'err'); return; }
+  closeDetail();
+  openForm(r.jenis, r);
+}
+async function deleteRecord(localId) {
+  const ok = await askConfirm({ icon: '🗑', title: 'Hapus data ini?', text: 'Data belum terkirim ke Sheets dan akan hilang permanen dari HP.', okText: 'Hapus', danger: true });
+  if (!ok) return;
+  await dbDelete('records', localId); closeDetail(); renderHistory(); updateStats();
+}
+async function clearData() {
+  const recs = await dbGetAll('records'), unsent = recs.filter(r => r.status !== 'synced').length;
+  const ok = await askConfirm({ icon: '🗑', title: 'Hapus semua data lokal?',
+    text: unsent ? `Ada ${unsent} data yang BELUM terkirim dan akan hilang permanen.` : 'Data yang sudah terkirim tetap aman di Google Sheets.', okText: 'Hapus semua', danger: true });
+  if (!ok) return;
+  await dbClear('records'); renderHistory(); updateStats(); toast('🗑 Data lokal dihapus', 'ok');
+}
+
+// ══════════════════════════════════════════════════════════
+// SERVICE WORKER & STORAGE
+// ══════════════════════════════════════════════════════════
+async function registerSW() {
+  if (!('serviceWorker' in navigator)) return;
+  try {
+    const reg = await navigator.serviceWorker.register('./sw.js', { scope: './' });
+    window._swReg = reg;
+    navigator.serviceWorker.addEventListener('message', async e => {
+      if (e.data && e.data.type === 'SYNC_DONE') { await updateStats(); renderHistory(); toast('✅ Data tersync otomatis!', 'ok'); }
+    });
+  } catch (err) { console.warn('[SW] Gagal register:', err.message); }
+}
+async function requestBackgroundSync() {
+  try { if (window._swReg && 'sync' in window._swReg) await window._swReg.sync.register('ban-sync'); } catch (e) {}
+}
+async function requestPersistentStorage() {
+  try { if (navigator.storage && navigator.storage.persist && !(await navigator.storage.persisted())) await navigator.storage.persist(); } catch (e) {}
+}
+
+// ══════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════
+(async function init() {
+  $('homeDate').textContent = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  await initDB();
+  await loadSettings();
+  updateOnlineStatus(); updateStats(); renderHistory();
+  setupAutoSync(); registerSW(); requestPersistentStorage();
+  if (navigator.onLine) syncMaster(false);
+  setTimeout(() => tryAutoSync(), 1500);
+  if (!settings.nama) {
+    // Pertama kali dibuka / nama belum diatur: minta pilih nama dulu sebelum dipakai.
+    showPage('settings');
+    toast('👋 Pilih Nama Penginput dulu sebelum mulai input', 'ok', 4000);
+  }
+})();
+</script>
+</body>
+</html>
