@@ -7,10 +7,10 @@
 //     bahkan saat app ditutup / HP di-lock, begitu dapat jaringan.
 // ══════════════════════════════════════════════════════════
 
-const SW_VERSION   = 'ban-motui-sw-v1';
+const SW_VERSION   = 'ban-motui-sw-v2';
 const CACHE_PREFIX = 'ban-motui-shell-';       // awalan khusus Motui: activate HANYA membuang cache berawalan ini,
-const CACHE_NAME   = CACHE_PREFIX + 'v1';      // jadi tidak menyentuh cache app lain (mis. Kolonodale) di domain yang sama.
-                                               // NAIKKAN angka v1 tiap kali index.html di-update & redeploy.
+const CACHE_NAME   = CACHE_PREFIX + 'v2';      // jadi tidak menyentuh cache app lain (mis. Kolonodale) di domain yang sama.
+                                               // NAIKKAN angka v2 tiap kali index.html di-update & redeploy.
 const APP_SHELL = [
   './',
   './index.html',
@@ -62,7 +62,9 @@ self.addEventListener('activate', e => {
   );
 });
 
-// ── Fetch: cache-first untuk app shell; GAS & domain lain lewat begitu saja ──
+// ── Fetch: stale-while-revalidate untuk app shell; GAS & domain lain lewat begitu saja ──
+// Tampilkan cache dulu (cepat & jalan offline), sambil diam-diam mengambil versi terbaru dari jaringan
+// untuk dipakai di pembukaan BERIKUTNYA. Jadi update index.html tidak lagi "nyangkut" di versi lama.
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
@@ -70,8 +72,7 @@ self.addEventListener('fetch', e => {
 
   e.respondWith(
     caches.match(req).then(cached => {
-      if (cached) return cached;
-      return fetch(req)
+      const network = fetch(req)
         .then(res => {
           if (res && res.ok) {
             const clone = res.clone();
@@ -79,10 +80,13 @@ self.addEventListener('fetch', e => {
           }
           return res;
         })
-        .catch(() => {
-          if (req.mode === 'navigate') return caches.match('./index.html');
-          return new Response('', { status: 504, statusText: 'Offline & tidak ada cache' });
-        });
+        .catch(() => null);
+      if (cached) { e.waitUntil(network); return cached; }
+      return network.then(res => {
+        if (res) return res;
+        if (req.mode === 'navigate') return caches.match('./index.html');
+        return new Response('', { status: 504, statusText: 'Offline & tidak ada cache' });
+      });
     })
   );
 });
@@ -96,7 +100,24 @@ self.addEventListener('sync', e => {
 });
 
 // ── Fungsi Sync Utama ─────────────────────────────────────
+// Kunci bersama (Web Locks) dengan halaman: kalau index.html sedang sync, SW tidak ikut mengirim
+// record yang sama (sumber dobel). Nama kunci HARUS sama dgn di index.html.
+const LOCK_NAME = 'ban-motui-sync';
 async function doSync() {
+  if (self.navigator && navigator.locks) {
+    let ran = false;
+    await navigator.locks.request(LOCK_NAME, { ifAvailable: true }, async lock => {
+      if (!lock) return;           // halaman sedang sync — biarkan dia yang menyelesaikan
+      ran = true;
+      await doSyncInner();
+    });
+    if (!ran) console.log('[SW] Halaman sedang sync, SW lewati');
+    return;
+  }
+  return doSyncInner();
+}
+
+async function doSyncInner() {
   let db;
   try {
     db = await openDB();
@@ -156,7 +177,7 @@ async function doSync() {
 async function syncOne(db, rec) {
   try {
     const ctrl = new AbortController();
-    const tid = setTimeout(() => ctrl.abort(), 20000);
+    const tid = setTimeout(() => ctrl.abort(), 60000); // sama dgn index.html: GAS bisa cold start / antre lock
 
     const res = await fetch(GAS_URL, {
       method: 'POST',
@@ -167,9 +188,10 @@ async function syncOne(db, rec) {
     });
     clearTimeout(tid);
 
-    let json;
+    let json, parseFailed = false;
     try { json = await res.json(); }
-    catch { json = { status: 'error', message: 'Respons bukan JSON valid' }; }
+    catch { parseFailed = true; json = { status: 'error', message: 'Respons bukan JSON valid' }; }
+    if (parseFailed && await sudahAdaDiServer(rec)) json = { status: 'ok' }; // data sebenarnya sudah masuk
 
     if (json.status === 'ok') {
       await dbUpdate(db, 'records', rec.localId, {
@@ -194,8 +216,15 @@ async function syncOne(db, rec) {
     return 'fail';
 
   } catch (err) {
+    // Timeout / jaringan putus di tengah jalan: data sering SUDAH masuk. Cek dulu supaya tidak dikirim ulang.
+    if (await sudahAdaDiServer(rec)) {
+      await dbUpdate(db, 'records', rec.localId, {
+        status: 'synced', syncedAt: new Date().toISOString(), errorMsg: '', retryCount: 0, nextRetryAt: null
+      });
+      return 'ok';
+    }
     const count = (rec.retryCount || 0) + 1;
-    const msg = err.name === 'AbortError' ? 'Timeout (>20 detik)' : err.message;
+    const msg = err.name === 'AbortError' ? 'Timeout (>60 detik)' : err.message;
     await dbUpdate(db, 'records', rec.localId, {
       status: 'error', errorMsg: msg, retryCount: count,
       nextRetryAt: Date.now() + RETRY_DELAYS_MS[Math.min(count - 1, RETRY_DELAYS_MS.length - 1)]
@@ -206,6 +235,23 @@ async function syncOne(db, rec) {
     if (err.name !== 'AbortError') throw err;
     return 'fail';
   }
+}
+
+// Sama dgn sudahAdaDiServer() di index.html. Hanya untuk record yang belum pernah synced
+// (record hasil edit memang sudah punya Client ID di server).
+async function sudahAdaDiServer(rec) {
+  if (rec.syncedAt || !rec.tanggal) return false;
+  try {
+    const ctrl = new AbortController(), tid = setTimeout(() => ctrl.abort(), 15000);
+    const res = await fetch(GAS_URL + '?action=getHistory&date=' + encodeURIComponent(rec.tanggal), { method: 'GET', redirect: 'follow', signal: ctrl.signal });
+    clearTimeout(tid);
+    const json = JSON.parse(await res.text());
+    if (json.status !== 'ok') return false;
+    const id = rec.payload && rec.payload['Client ID'];
+    if (!id) return false;
+    const ids = new Set((json.rows || []).map(r => r.clientId));
+    return rec.jenis === 'ganti' ? (ids.has(id + '-L') && ids.has(id + '-P')) : ids.has(id);
+  } catch (e) { return false; }
 }
 
 // Sama dgn shouldRetryRecord() di index.html.

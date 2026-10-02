@@ -1109,7 +1109,7 @@ function updatePhotoHint() {
   $('photoHint').textContent = `Maksimal ${MASTER.maxFoto} foto. Foto tidak wajib.`;
 }
 
-function compress(file, maxDim = 1280, quality = 0.7) {
+function compress(file, maxDim = 1024, quality = 0.6) { // lebih kecil = upload lebih cepat di sinyal site
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file), img = new Image();
     img.onload = () => {
@@ -1425,13 +1425,59 @@ function shouldRetryRecord(rec) {
   return false; // synced / rejected
 }
 
+// Record yang sedang dikirim — mencegah record yang SAMA terkirim paralel (mis. Simpan -> syncAll(force)
+// bersamaan dengan auto-sync/tombol Sync) yang bikin dobel baris di Spreadsheet.
+const _inflight = new Set();
+
+// Respons hilang/timeout belum tentu gagal: data sering SUDAH masuk Sheets. Sebelum record dibiarkan
+// 'pending' (lalu dikirim ulang), tanya server apakah Client ID-nya sudah ada. Hanya untuk record yang
+// belum pernah synced (record hasil edit memang sudah punya Client ID di server, jadi tidak bisa dicek begini).
+async function sudahAdaDiServer(rec) {
+  if (rec.syncedAt || !rec.tanggal) return false;
+  try {
+    const ctrl = new AbortController(), tid = setTimeout(() => ctrl.abort(), 15000);
+    const res = await fetch(GAS_URL + '?action=getHistory&date=' + encodeURIComponent(rec.tanggal), { method: 'GET', redirect: 'follow', signal: ctrl.signal });
+    clearTimeout(tid);
+    const json = JSON.parse(await res.text());
+    if (json.status !== 'ok') return false;
+    const id = rec.payload && rec.payload['Client ID'];
+    if (!id) return false;
+    const ids = new Set((json.rows || []).map(r => r.clientId));
+    return rec.jenis === 'ganti' ? (ids.has(id + '-L') && ids.has(id + '-P')) : ids.has(id);
+  } catch (e) { return false; }
+}
+
+// Pembungkus: status "sedang sync" & tombol Sync SELALU dipulihkan (try/finally), walau ada error di tengah
+// jalan — sebelumnya satu error saja bisa bikin tombol macet "Sync..." selamanya & tap berikutnya cuma
+// dijawab "Sedang sync". _syncDepth menghitung proses paralel (Simpan memakai force) supaya proses yang
+// selesai lebih dulu tidak menyalakan kembali tombol saat proses lain masih jalan.
+let _syncDepth = 0;
 async function syncAll(manual, force, onlyId, quiet) {
   if (!HAS_GAS) { toast('⚠ URL GAS belum diisi', 'err'); return; }
   if (_isSyncing && !force) { toast('⏳ Sedang sync, harap tunggu...'); return; }
-  _isSyncing = true;
+  _syncDepth++; _isSyncing = true;
   const btn = $('syncBtn');
-  const resetBtn = () => { btn.disabled = false; btn.innerHTML = '↑ Sync <span class="sync-badge" id="syncBadge" style="display:none">0</span>'; };
   btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Sync...';
+  try {
+    // Kunci bersama dgn Service Worker (nama sama dgn LOCK_NAME di sw.js) + antre antar-proses di halaman ini:
+    // satu record tidak mungkin dikirim paralel oleh dua jalur. Daftar record dihitung SETELAH kunci didapat.
+    if (navigator.locks) await navigator.locks.request('ban-motui-sync', () => _syncAllInner(manual, force, onlyId, quiet));
+    else await _syncAllInner(manual, force, onlyId, quiet);
+  } catch (e) {
+    toast('❌ Sync terhenti: ' + (e && e.message ? e.message : e) + '. Tap Sync untuk coba lagi.', 'err', 5000);
+  } finally {
+    _syncDepth = Math.max(0, _syncDepth - 1);
+    if (_syncDepth === 0) {
+      _isSyncing = false;
+      btn.disabled = false;
+      btn.innerHTML = '↑ Sync <span class="sync-badge" id="syncBadge" style="display:none">0</span>';
+      try { updateSyncBadge(); } catch (e) {}
+    }
+  }
+}
+
+async function _syncAllInner(manual, force, onlyId, quiet) {
+  const resetBtn = () => {}; // dipulihkan oleh pembungkus syncAll
 
   // Urutan kirim per unit harus sama dengan urutan input di HP (lepas dulu, baru pasang/geser), karena server
   // menolak geser ke posisi yang di server MASIH Aktif. Record yang baru diedit dihitung dari updatedAt-nya.
@@ -1459,13 +1505,15 @@ async function syncAll(manual, force, onlyId, quiet) {
   }
 
   if (!toSync.length) {
-    toast('✅ Semua data tersync', 'ok'); resetBtn(); updateSyncBadge(); _isSyncing = false; return;
+    toast('✅ Semua data tersync', 'ok'); return;
   }
 
   let success = 0, failed = 0, rejected = 0;
   const blockedUnits = new Set(); // unit yang record sebelumnya gagal kirim (jaringan/server) — sisanya tunggu
   for (const rec of toSync) {
     if (blockedUnits.has(rec.unit)) continue; // tetap pending, dicoba lagi berurutan
+    if (_inflight.has(rec.localId)) continue; // sedang dikirim oleh proses sync lain — jangan kirim dobel
+    _inflight.add(rec.localId);
     try {
       // 60 detik (bukan 45): Apps Script Web App bisa "cold start" + antre LockService
       // sebelum benar-benar mulai proses, apalagi di sinyal HP yang pas-pasan di site.
@@ -1475,7 +1523,9 @@ async function syncAll(manual, force, onlyId, quiet) {
         headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow', signal: ctrl.signal
       });
       clearTimeout(tid);
-      let json; try { json = JSON.parse(await res.text()); } catch (e) { json = { status: 'error', message: 'Respons bukan JSON valid' }; }
+      let json, parseFailed = false;
+      try { json = JSON.parse(await res.text()); } catch (e) { parseFailed = true; json = { status: 'error', message: 'Respons bukan JSON valid' }; }
+      if (parseFailed && await sudahAdaDiServer(rec)) json = { status: 'ok' }; // data sebenarnya sudah masuk
       if (json.status === 'ok') {
         await dbUpdate('records', rec.localId, { status: 'synced', syncedAt: new Date().toISOString(), errorMsg: '', retryCount: 0, nextRetryAt: null });
         success++;
@@ -1490,10 +1540,18 @@ async function syncAll(manual, force, onlyId, quiet) {
         failed++; blockedUnits.add(rec.unit);
       }
     } catch (e) {
-      const retryCount = (rec.retryCount || 0) + 1;
-      await dbUpdate('records', rec.localId, { status: 'error', errorMsg: e.name === 'AbortError' ? 'Timeout (>60 detik)' : e.message, retryCount,
-        nextRetryAt: Date.now() + RETRY_DELAYS_MS[Math.min(retryCount - 1, RETRY_DELAYS_MS.length - 1)] });
-      failed++; blockedUnits.add(rec.unit);
+      // Timeout / jaringan putus di tengah jalan: cek dulu apakah server ternyata sudah menerima.
+      if (await sudahAdaDiServer(rec)) {
+        await dbUpdate('records', rec.localId, { status: 'synced', syncedAt: new Date().toISOString(), errorMsg: '', retryCount: 0, nextRetryAt: null });
+        success++;
+      } else {
+        const retryCount = (rec.retryCount || 0) + 1;
+        await dbUpdate('records', rec.localId, { status: 'error', errorMsg: e.name === 'AbortError' ? 'Timeout (>60 detik)' : e.message, retryCount,
+          nextRetryAt: Date.now() + RETRY_DELAYS_MS[Math.min(retryCount - 1, RETRY_DELAYS_MS.length - 1)] });
+        failed++; blockedUnits.add(rec.unit);
+      }
+    } finally {
+      _inflight.delete(rec.localId);
     }
   }
   resetBtn(); updateSyncBadge(); updateStats(); renderHistory();
@@ -1504,7 +1562,6 @@ async function syncAll(manual, force, onlyId, quiet) {
   // sini bikin operator panik seolah datanya hilang, padahal cuma belum sempat terkirim.
   else if (quiet) toast('⏳ Tersimpan di HP. Server belum merespons, akan dicoba lagi otomatis.', 'ok', 4000);
   else toast(`⚠ ${success} berhasil, ${failed} gagal (auto-retry aktif)`, 'err');
-  _isSyncing = false;
   if (success) syncMaster(false);   // segarkan daftar ban terpasang
 }
 
@@ -1539,7 +1596,10 @@ function setupAutoSync() {
     if (now) await tryAutoSync();
   }, 15000);
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') { updateOnlineStatus(); setTimeout(() => tryAutoSync(), 2000); }
+    if (document.visibilityState === 'visible') {
+      updateOnlineStatus(); setTimeout(() => tryAutoSync(), 2000);
+      if (currentPage === 'laporan' && rollLapDateRangeIfNewDay()) refreshLaporan();
+    }
   });
 }
 function updateOnlineStatus() {
@@ -1704,9 +1764,31 @@ function openRemoteDetail(clientId) {
 // ══════════════════════════════════════════════════════════
 let lapDateFrom = null, lapDateTo = null; // null berarti "belum diset" — resetLapDateRangeToToday() akan mengisinya
 let lapRemoteRows = [], lapRemoteRangeKey = null;
+let lapFromFollowsToday = true, lapToFollowsToday = true; // true = ujung rentang itu "hari ini" → ikut maju otomatis saat tanggal berganti
+let lapLastToday = null;
+
+// Dipanggil tiap laporan dibuka/di-refresh & saat app kembali aktif: kalau tanggal hari ini sudah ganti
+// (PWA dibiarkan terbuka semalaman), ujung rentang yang tadinya "hari ini" digeser ke hari ini yang baru.
+function rollLapDateRangeIfNewDay() {
+  const today = todayIso();
+  if (lapLastToday === today) return false;
+  const first = lapLastToday === null;
+  lapLastToday = today;
+  if (first || !lapDateFrom || !lapDateTo) return false;
+  let changed = false;
+  if (lapFromFollowsToday && lapDateFrom !== today) { lapDateFrom = today; changed = true; }
+  if (lapToFollowsToday && lapDateTo !== today) { lapDateTo = today; changed = true; }
+  if (lapDateFrom > lapDateTo) lapDateFrom = lapDateTo;
+  const fi = $('lapDateFromInput'), ti = $('lapDateToInput');
+  if (fi) fi.value = lapDateFrom;
+  if (ti) ti.value = lapDateTo;
+  return changed;
+}
 
 function resetLapDateRangeToToday() {
   lapDateFrom = lapDateTo = todayIso();
+  lapLastToday = lapDateFrom;
+  lapFromFollowsToday = lapToFollowsToday = true;
   const fi = $('lapDateFromInput'), ti = $('lapDateToInput');
   if (fi) fi.value = lapDateFrom;
   if (ti) ti.value = lapDateTo;
@@ -1715,14 +1797,16 @@ function onLapFromChange() {
   const v = $('lapDateFromInput').value;
   if (!v) return;
   lapDateFrom = v;
-  if (lapDateFrom > lapDateTo) { lapDateTo = lapDateFrom; $('lapDateToInput').value = lapDateTo; }
+  lapFromFollowsToday = (v === todayIso());
+  if (lapDateFrom > lapDateTo) { lapDateTo = lapDateFrom; lapToFollowsToday = (lapDateTo === todayIso()); $('lapDateToInput').value = lapDateTo; }
   refreshLaporan(true);
 }
 function onLapToChange() {
   const v = $('lapDateToInput').value;
   if (!v) return;
   lapDateTo = v;
-  if (lapDateTo < lapDateFrom) { lapDateFrom = lapDateTo; $('lapDateFromInput').value = lapDateFrom; }
+  lapToFollowsToday = (v === todayIso());
+  if (lapDateTo < lapDateFrom) { lapDateFrom = lapDateTo; lapFromFollowsToday = (lapDateFrom === todayIso()); $('lapDateFromInput').value = lapDateFrom; }
   refreshLaporan(true);
 }
 
@@ -1751,6 +1835,7 @@ async function fetchRemoteHistoryRange(from, to) {
 
 async function refreshLaporan(manual) {
   if (!lapDateFrom || !lapDateTo) resetLapDateRangeToToday(); // default ke hari ini saat pertama kali dibuka
+  else rollLapDateRangeIfNewDay(); // tanggal sudah ganti sejak terakhir dibuka → rentang ikut aktual
   const from = lapDateFrom, to = lapDateTo, rangeKey = from + '_' + to;
   const content = $('lapContent'), note = $('lapLoadingNote');
   if (lapRemoteRangeKey === rangeKey) {
@@ -1859,7 +1944,7 @@ async function renderLaporan() {
     lapGroupStore[cat] = rows;
     return rows.length ? rows.map(([k, items], idx) =>
       `<div class="lap-row" data-cat="${esc(cat)}" data-idx="${idx}"><span>${esc(k)}</span><span class="lap-count">${items.length}</span></div>`).join('')
-      : `<div class="lap-row"><span class="muted">Belum ada data hari ini</span></div>`;
+      : `<div class="lap-row"><span class="muted">${from === to && from === todayIso() ? 'Belum ada data hari ini' : 'Belum ada data di rentang tanggal ini'}</span></div>`;
   };
 
   $('lapSeriList').innerHTML = renderList('seri', groupBy(pemasangan, p => p.seri));
