@@ -7,10 +7,10 @@
 //     bahkan saat app ditutup / HP di-lock, begitu dapat jaringan.
 // ══════════════════════════════════════════════════════════
 
-const SW_VERSION   = 'ban-motui-sw-v2';
+const SW_VERSION   = 'ban-motui-sw-v3';
 const CACHE_PREFIX = 'ban-motui-shell-';       // awalan khusus Motui: activate HANYA membuang cache berawalan ini,
-const CACHE_NAME   = CACHE_PREFIX + 'v2';      // jadi tidak menyentuh cache app lain (mis. Kolonodale) di domain yang sama.
-                                               // NAIKKAN angka v2 tiap kali index.html di-update & redeploy.
+const CACHE_NAME   = CACHE_PREFIX + 'v3';      // jadi tidak menyentuh cache app lain (mis. Kolonodale) di domain yang sama.
+                                               // NAIKKAN angka v3 tiap kali index.html di-update & redeploy.
 const APP_SHELL = [
   './',
   './index.html',
@@ -38,7 +38,7 @@ self.addEventListener('install', e => {
     caches.open(CACHE_NAME).then(cache =>
       Promise.allSettled(
         APP_SHELL.map(url =>
-          cache.add(url).catch(err => {
+          cache.add(new Request(url, { cache: 'reload' })).catch(err => {
             console.warn('[SW] Gagal precache satu file (' + url + '):', err.message);
             return null;
           })
@@ -72,7 +72,7 @@ self.addEventListener('fetch', e => {
 
   e.respondWith(
     caches.match(req).then(cached => {
-      const network = fetch(req)
+      const network = fetch(req, { cache: 'no-cache' })
         .then(res => {
           if (res && res.ok) {
             const clone = res.clone();

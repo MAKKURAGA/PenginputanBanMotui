@@ -2048,8 +2048,15 @@ async function clearData() {
 async function registerSW() {
   if (!('serviceWorker' in navigator)) return;
   try {
-    const reg = await navigator.serviceWorker.register('./sw.js', { scope: './' });
+    // updateViaCache:'none' = file sw.js SELALU dicek ke server (bukan cache HTTP), supaya update cepat sampai.
+    const hadController = !!navigator.serviceWorker.controller;
+    const reg = await navigator.serviceWorker.register('./sw.js', { scope: './', updateViaCache: 'none' });
     window._swReg = reg;
+    reg.update().catch(() => {}); // cek versi baru tiap app dibuka
+    // Versi baru sudah aktif -> beri tahu operator (jangan reload paksa: bisa menghapus form yang sedang diisi).
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (hadController) toast('🔄 Versi baru terpasang. Tutup lalu buka ulang app untuk memakainya.', 'ok', 6000);
+    });
     navigator.serviceWorker.addEventListener('message', async e => {
       if (e.data && e.data.type === 'SYNC_DONE') { await updateStats(); renderHistory(); toast('✅ Data tersync otomatis!', 'ok'); }
     });
